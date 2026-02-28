@@ -4,6 +4,6 @@
 	"dependencies": {
 		"arisu-text": { "path": "../arisu-text" },
 		"winit": { "git": "https://github.com/codebycruz/winit" },
-		"hood": { "git": "https://github.com/codebycruz/hood" }
+		"hood": { "path": "../../../hood" }
 	}
 }

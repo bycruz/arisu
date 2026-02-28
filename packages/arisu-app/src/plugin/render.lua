@@ -89,8 +89,8 @@ function RenderPlugin:register(window)
 			module = { type = shaderType, source = io.open(dirName .. "../shaders/main.frag." .. shaderExt, "rb"):read("*a") },
 			targets = {
 				{
-					blend = hood.BlendState.ALPHA_BLENDING,
-					writeMask = hood.ColorWrites.ALL,
+					blend = hood.BlendState.AlphaBlending,
+					writeMask = hood.ColorWrites.All,
 					format = hood.TextureFormat.Rgba8UNorm,
 				},
 			},
@@ -120,8 +120,8 @@ function RenderPlugin:register(window)
 			module = { type = shaderType, source = io.open("../arisu/shaders/overlay.frag." .. shaderExt, "rb"):read("*a") },
 			targets = {
 				{
-					blend = hood.BlendState.ALPHA_BLENDING,
-					writeMask = hood.ColorWrites.ALL,
+					blend = hood.BlendState.AlphaBlending,
+					writeMask = hood.ColorWrites.All,
 					format = hood.TextureFormat.Rgba8UNorm,
 				},
 			},
