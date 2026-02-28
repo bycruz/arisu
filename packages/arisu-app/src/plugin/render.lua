@@ -68,7 +68,7 @@ function RenderPlugin:register(window)
 	local ctx = self.windowPlugin:getContext(window)
 	assert(ctx, "Window context not found for render plugin")
 
-	local swapchain = ctx.surface:configure(self.device, {})
+	local swapchain = ctx.surface:configure(self.device, { presentMode = "fifo" })
 
 	local vertexDescriptor = VertexLayout
 		.new()
@@ -77,8 +77,8 @@ function RenderPlugin:register(window)
 		:withAttribute({ type = "f32", size = 2, offset = 28 }) -- uv
 		:withAttribute({ type = "f32", size = 1, offset = 36 }) -- texture id
 
-	local quadVertex = self.device:createBuffer({ size = vertexDescriptor:getStride() * 100000, usages = { "VERTEX" } })
-	local quadIndex = self.device:createBuffer({ size = ffi.sizeof("uint32_t") * 10000, usages = { "INDEX" } })
+	local quadVertex = self.device:createBuffer({ size = vertexDescriptor:getStride() * 100000, usages = { "VERTEX", "COPY_DST" } })
+	local quadIndex = self.device:createBuffer({ size = ffi.sizeof("uint32_t") * 10000, usages = { "INDEX", "COPY_DST" } })
 
 	local quadPipeline = self.device:createPipeline({
 		vertex = {
@@ -102,8 +102,8 @@ function RenderPlugin:register(window)
 		},
 	})
 
-	local overlayVertex = self.device:createBuffer({ size = vertexDescriptor:getStride() * 1000, usages = { "VERTEX" } })
-	local overlayIndex = self.device:createBuffer({ size = ffi.sizeof("uint32_t") * 1000, usages = { "INDEX" } })
+	local overlayVertex = self.device:createBuffer({ size = vertexDescriptor:getStride() * 1000, usages = { "VERTEX", "COPY_DST" } })
+	local overlayIndex = self.device:createBuffer({ size = ffi.sizeof("uint32_t") * 1000, usages = { "INDEX", "COPY_DST" } })
 
 	local overlayVertexDescriptor = VertexLayout
 		.new()
@@ -202,7 +202,8 @@ function RenderPlugin:draw(ctx)
 	encoder:endRendering()
 
 	local commandBuffer = encoder:finish()
-	self.device.queue:submit(commandBuffer)
+	self.device.queue:submit(commandBuffer, ctx.swapchain)
+	self.device.queue:present(ctx.swapchain)
 end
 
 ---@param event winit.Event
