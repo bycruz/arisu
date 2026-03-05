@@ -71,7 +71,7 @@ function Compute.new(textureManager, canvas, device)
 			{
 				binding = 0,
 				type = "storageTexture",
-				texture = textureManager.texture:createView({}),
+				texture = textureManager.texture:createView({ dimension = "2d", baseArrayLayer = canvas, layerCount = 1 }),
 				visibility = { "COMPUTE" },
 				layer = canvas,
 				access = "WRITE_ONLY",
@@ -157,10 +157,11 @@ function Compute:stamp(x, y, radius, color)
 
 	self:updateInputs()
 	local encoder = self.device:createCommandEncoder()
-	encoder:beginComputePass({})
 	encoder:setComputePipeline(self.pipeline)
 	encoder:setBindGroup(0, self.bindGroup)
+	encoder:beginComputePass({})
 	encoder:dispatchWorkgroups(groupsX, groupsY, 1)
+	encoder:endComputePass()
 	self.device.queue:submit(encoder:finish())
 end
 
@@ -179,10 +180,11 @@ function Compute:erase(x, y, radius)
 
 	self:updateInputs()
 	local encoder = self.device:createCommandEncoder()
-	encoder:beginComputePass({})
 	encoder:setComputePipeline(self.pipeline)
 	encoder:setBindGroup(0, self.bindGroup)
+	encoder:beginComputePass({})
 	encoder:dispatchWorkgroups(groupsX, groupsY, 1)
+	encoder:endComputePass()
 	self.device.queue:submit(encoder:finish())
 end
 
@@ -209,10 +211,11 @@ function Compute:drawLine(x1, y1, x2, y2, thickness, color)
 
 	self:updateInputs()
 	local encoder = self.device:createCommandEncoder()
-	encoder:beginComputePass({})
 	encoder:setComputePipeline(self.pipeline)
 	encoder:setBindGroup(0, self.bindGroup)
+	encoder:beginComputePass({})
 	encoder:dispatchWorkgroups(groupsX, groupsY, 1)
+	encoder:endComputePass()
 	self.device.queue:submit(encoder:finish())
 end
 
@@ -239,10 +242,11 @@ function Compute:drawRectangle(x1, y1, x2, y2, thickness, color)
 
 	self:updateInputs()
 	local encoder = self.device:createCommandEncoder()
-	encoder:beginComputePass({})
 	encoder:setComputePipeline(self.pipeline)
 	encoder:setBindGroup(0, self.bindGroup)
+	encoder:beginComputePass({})
 	encoder:dispatchWorkgroups(groupsX, groupsY, 1)
+	encoder:endComputePass()
 	self.device.queue:submit(encoder:finish())
 end
 
@@ -269,10 +273,11 @@ function Compute:drawEllipse(x1, y1, x2, y2, thickness, color)
 
 	self:updateInputs()
 	local encoder = self.device:createCommandEncoder()
-	encoder:beginComputePass({})
 	encoder:setComputePipeline(self.pipeline)
 	encoder:setBindGroup(0, self.bindGroup)
+	encoder:beginComputePass({})
 	encoder:dispatchWorkgroups(groupsX, groupsY, 1)
+	encoder:endComputePass()
 	self.device.queue:submit(encoder:finish())
 end
 
