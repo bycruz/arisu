@@ -87,6 +87,7 @@ function Compute.new(textureManager, canvas, device)
 	})
 
 	local computePipeline = device:createComputePipeline({
+		layout = bindGroupLayout,
 		module = { type = shaderType, source = computeSource },
 	})
 
