@@ -281,4 +281,29 @@ function Compute:drawEllipse(x1, y1, x2, y2, thickness, color)
 	self.device.queue:submit(encoder:finish())
 end
 
+---@param x number
+---@param y number
+---@param color { r: number, g: number, b: number, a: number }
+function Compute:fill(x, y, color)
+	self.inputs.center[0] = x
+	self.inputs.center[1] = y
+	self.inputs.color[0] = color.r
+	self.inputs.color[1] = color.g
+	self.inputs.color[2] = color.b
+	self.inputs.color[3] = color.a
+	self.inputs.tool = TOOL_FILL
+
+	local groupsX = math.ceil(800 / WORK_GROUP_SIZE)
+	local groupsY = math.ceil(600 / WORK_GROUP_SIZE)
+
+	self:updateInputs()
+	local encoder = self.device:createCommandEncoder()
+	encoder:setComputePipeline(self.pipeline)
+	encoder:setBindGroup(0, self.bindGroup)
+	encoder:beginComputePass({})
+	encoder:dispatchWorkgroups(groupsX, groupsY, 1)
+	encoder:endComputePass()
+	self.device.queue:submit(encoder:finish())
+end
+
 return Compute
