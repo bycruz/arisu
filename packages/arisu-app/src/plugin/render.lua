@@ -19,6 +19,7 @@ local shaderExt = isVulkan and "spv" or "glsl"
 ---@field overlayVertex hood.Buffer
 ---@field overlayIndex hood.Buffer
 ---@field depthBuffer hood.Texture
+---@field depthBufferView hood.TextureView
 ---@field ui? arisu.Element
 ---@field layoutTree? arisu.Layout
 ---@field computedLayout? arisu.ComputedLayout
@@ -210,6 +211,7 @@ function RenderPlugin:register(window)
 		overlayIndex = overlayIndex,
 		nIndices = 0,
 		depthBuffer = depthBuffer,
+		depthBufferView = depthBuffer:createView({}),
 	}
 
 	self.contexts[window] = ctx
@@ -236,12 +238,12 @@ function RenderPlugin:draw(ctx)
 						a = 1,
 					},
 				},
-				texture = ctx.swapchain:getCurrentTexture(),
+				texture = ctx.swapchain:getCurrentTexture():createView({}),
 			},
 		},
 		depthStencilAttachment = {
 			op = { type = "clear", depth = 1 },
-			texture = ctx.depthBuffer,
+			texture = ctx.depthBufferView,
 		},
 	})
 	encoder:setPipeline(ctx.quadPipeline)

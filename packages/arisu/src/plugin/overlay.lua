@@ -9,6 +9,7 @@ local hood = require("hood")
 ---@field uniformBuffer hood.Buffer
 ---@field bindGroup hood.BindGroup
 ---@field overlayTexture number
+---@field overlayTextureView hood.TextureView
 ---@field vertexBuffer hood.Buffer
 ---@field indexBuffer hood.Buffer
 
@@ -50,6 +51,11 @@ function OverlayPlugin:register(window)
 	local device = self.renderPlugin.device
 	local textureManager = self.renderPlugin.sharedResources.textureManager
 	local overlayTexture = textureManager:allocate(800, 600)
+	local overlayTextureView = textureManager.texture:createView({
+		dimension = "2d",
+		baseArrayLayer = overlayTexture,
+		layerCount = 1,
+	})
 
 	local uniformBuffer = device:createBuffer({
 		size = sizeofOverlayUniforms,
@@ -87,6 +93,7 @@ function OverlayPlugin:register(window)
 		uniformBuffer = uniformBuffer,
 		bindGroup = bindGroup,
 		overlayTexture = overlayTexture,
+		overlayTextureView = overlayTextureView,
 		vertexBuffer = vertexBuffer,
 		indexBuffer = indexBuffer,
 	}
@@ -337,8 +344,7 @@ function OverlayPlugin:draw(window, pattern, time)
 			colorAttachments = {
 				{
 					op = { type = "clear", color = { r = 0, g = 0, b = 0, a = 0 } },
-					texture = textureManager.texture,
-					layer = ctx.overlayTexture,
+					texture = ctx.overlayTextureView,
 				},
 			},
 		})

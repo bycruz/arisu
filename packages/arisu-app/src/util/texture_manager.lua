@@ -28,7 +28,7 @@ function TextureManager.new(device)
 	local texture = device:createTexture({
 		extents = { dim = "2d", width = maxWidth, height = maxHeight, count = maxLayers },
 		format = "rgba8unorm",
-		usages = { "TEXTURE_BINDING", "STORAGE_BINDING", "COPY_DST", "COPY_SRC" },
+		usages = { "TEXTURE_BINDING", "STORAGE_BINDING", "COPY_DST", "COPY_SRC", "RENDER_ATTACHMENT" },
 	})
 
 	local sampler = device:createSampler({
