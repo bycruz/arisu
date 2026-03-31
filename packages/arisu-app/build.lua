@@ -1,4 +1,4 @@
-local outputDir = os.getenv("LPM_OUTPUT_DIR")
+local outputDir = os.getenv("LDE_OUTPUT_DIR")
 
 local pathSep = string.sub(package.config, 1, 1)
 

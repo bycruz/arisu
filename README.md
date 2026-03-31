@@ -29,10 +29,8 @@ There are no dependencies used by the library. Pure X11/Win32 and OpenGL.
 
 ## Running
 
-1. Set up [lpm](https://github.com/codebycruz/lpm) on your system.
-2. Run `lpm run` inside of `./packages/arisu`.
-
-That's it. `lpm` contains a build of LuaJIT for you, and handles the installation of dependencies (in this case, only dependencies to itself).
+1. Set up [lde](https://lde.sh) on your system.
+2. Run `lde run` inside of `./packages/arisu`.
 
 ## Attributions
 

@@ -1,2 +1,2 @@
 run:
-    @cd ./packages/arisu && lpm run ./src/init.lua
+    @cd ./packages/arisu && lde run ./src/init.lua
