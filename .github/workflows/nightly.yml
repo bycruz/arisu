@@ -50,11 +50,21 @@ jobs:
         shell: pwsh
         run: echo "SEA_CC=x86_64-w64-mingw32-clang" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
+      - name: Install glslc (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y glslc
+
+      - name: Install glslc (Windows)
+        if: runner.os == 'Windows'
+        run: choco install vulkan-sdk --no-progress -y
+
       - uses: lde-org/setup-lde@master
         with:
           version: nightly
 
       - name: Build arisu
+        env:
+          VULKAN: "1"
         run: |
           cd packages/arisu
           lde compile --outfile ${{ matrix.outfile }}
