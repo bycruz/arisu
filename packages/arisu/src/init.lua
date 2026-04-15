@@ -112,6 +112,7 @@ function App:makeResources() ---@return App.Resources
 
 	return {
 		---@type App.Resources.Icons
+		---@format disable-next
 		icons = {
 			brush = textureManager:upload(assert(Image.fromPath("assets/icons/brush.qoi"), "Brush icon not found")),
 			eraser = textureManager:upload(assert(Image.fromPath("assets/icons/david/eraser.qoi"), "Eraser icon not found")),
@@ -123,9 +124,7 @@ function App:makeResources() ---@return App.Resources
 			paste = textureManager:upload(assert(Image.fromPath("assets/icons/paste.qoi"), "Paste icon not found")),
 			magnifier = textureManager:upload(assert(Image.fromPath("assets/icons/magnifier.qoi"), "Magnifier icon not found")),
 			sound = textureManager:upload(assert(Image.fromPath("assets/icons/sound.qoi"), "Sound icon not found")),
-			soundMute = textureManager:upload(
-				assert(Image.fromPath("assets/icons/sound_mute.qoi"), "Sound mute icon not found")
-			),
+			soundMute = textureManager:upload(assert(Image.fromPath("assets/icons/sound_mute.qoi"), "Sound mute icon not found")),
 			vector = textureManager:upload(assert(Image.fromPath("assets/icons/vector.qoi"), "Vector icon not found")),
 			copy = textureManager:upload(assert(Image.fromPath("assets/icons/copy.qoi"), "Copy icon not found")),
 			cut = textureManager:upload(assert(Image.fromPath("assets/icons/cut.qoi"), "Cut icon not found")),

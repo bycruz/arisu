@@ -28,6 +28,25 @@ local function exists(path)
 	return false
 end
 
+---@param path string
+local function read(path)
+	local handle = io.open(path, "rb")
+	if handle then
+		local r = handle:read("*a")
+		handle:close()
+		return r
+	end
+end
+
+---@param path string
+local function write(path, content)
+	local handle = io.open(path, "wb")
+	if handle then
+		handle:write(content)
+		handle:close()
+	end
+end
+
 if os.getenv("VULKAN") then
 	local inputVertex = packageSourceDir .. "/shaders/main.vert.glsl"
 	local outputVertex = packageSourceDir .. "/shaders/main.vert.spv"
@@ -44,13 +63,45 @@ if os.getenv("VULKAN") then
 	end
 end
 
--- Symlink source /shaders/ dir into target output dir
+-- Write shader files as Lua modules to output dir
 
-local targetShaderDir = outputDir .. "/shaders"
-if not exists(targetShaderDir) then
+local shaderSrcDir = packageSourceDir .. "/shaders"
+local shaderOutDir = outputDir .. "/shaders"
+
+if not exists(shaderOutDir) then
 	if jit.os == "Windows" then
-		os.execute(string.format('mklink /J "%s" "%s"', targetShaderDir, packageSourceDir .. "/shaders"))
+		os.execute(string.format('mkdir "%s"', shaderOutDir))
 	else
-		os.execute(string.format("ln -s %s %s", packageSourceDir .. "/shaders", targetShaderDir))
+		os.execute(string.format("mkdir -p %q", shaderOutDir))
 	end
+end
+
+local function toLuaStringLiteral(data)
+	return (data:gsub(".", function(c)
+		local b = c:byte()
+		if b >= 32 and b <= 126 and c ~= '"' and c ~= "\\" then
+			return c
+		end
+		return string.format("\\x%02x", b)
+	end))
+end
+
+local listCmd
+if jit.os == "Windows" then
+	listCmd = string.format('dir /b "%s"', shaderSrcDir)
+else
+	listCmd = string.format("ls %q", shaderSrcDir)
+end
+
+local handle = io.popen(listCmd)
+if handle then
+	for filename in handle:lines() do
+		local content = read(shaderSrcDir .. "/" .. filename)
+		if content then
+			local code = string.format('return "%s"\n', toLuaStringLiteral(content))
+			write(shaderOutDir .. "/" .. filename .. ".lua", code)
+		end
+	end
+
+	handle:close()
 end
