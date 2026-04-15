@@ -105,3 +105,37 @@ if handle then
 
 	handle:close()
 end
+
+-- Write assets as Lua modules to output dir (recursive)
+
+local function mkdirp(path)
+	if not exists(path) then
+		if jit.os == "Windows" then
+			os.execute(string.format('mkdir "%s"', path))
+		else
+			os.execute(string.format("mkdir -p %q", path))
+		end
+	end
+end
+
+local assetsSrcDir = packageSourceDir .. "/assets"
+local assetsListCmd
+if jit.os == "Windows" then
+	assetsListCmd = string.format('dir /s /b "%s"', assetsSrcDir)
+else
+	assetsListCmd = string.format("find %q -type f", assetsSrcDir)
+end
+
+local assetsHandle = io.popen(assetsListCmd)
+if assetsHandle then
+	for srcPath in assetsHandle:lines() do
+		local relPath = srcPath:sub(#packageSourceDir + 2)
+		local outPath = outputDir .. "/" .. relPath .. ".lua"
+		mkdirp(outPath:match("(.*)" .. pathSep))
+		local content = read(srcPath)
+		if content then
+			write(outPath, string.format('return "%s"\n', toLuaStringLiteral(content)))
+		end
+	end
+	assetsHandle:close()
+end

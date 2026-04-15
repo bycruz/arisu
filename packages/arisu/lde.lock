@@ -1,8 +1,14 @@
 {
 	"dependencies": {
-		"arisu-app": { "path": "../arisu-app" },
-		"arisu-image": { "path": "../arisu-image" },
-		"arisu-text": { "path": "../arisu-text" },
+		"arisu-app": {
+			"path": "../arisu-app"
+		},
+		"arisu-image": {
+			"path": "../arisu-image"
+		},
+		"arisu-text": {
+			"path": "../arisu-text"
+		},
 		"glapi": {
 			"commit": "9996f5446d158d54ac311591887e7e5d257e845e",
 			"git": "https://github.com/codebycruz/glapi"
@@ -17,7 +23,8 @@
 		},
 		"winapi": {
 			"commit": "b3a6a8f040ad8216105317e0772b7b62eb783285",
-			"git": "https://github.com/codebycruz/winapi"
+			"git": "https://github.com/codebycruz/winapi",
+			"optional": true
 		},
 		"winit": {
 			"commit": "2bdfc24193e8728ce4c8c8de645ec49af780b127",
@@ -25,7 +32,8 @@
 		},
 		"x11api": {
 			"commit": "65f9a61a4e6e489cfb6a8c1b94ef3dd3cec656b0",
-			"git": "https://github.com/codebycruz/x11api"
+			"git": "https://github.com/codebycruz/x11api",
+			"optional": true
 		}
 	},
 	"version": "1"

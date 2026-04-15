@@ -4,7 +4,7 @@ local isVulkan = os.getenv("VULKAN") and true or false
 local shaderType = isVulkan and "spirv" or "glsl"
 local shaderExt = isVulkan and "spv" or "glsl"
 
-local computeSource = io.open("shaders/brush.compute." .. shaderExt, "rb"):read("*a") --[[@as string]]
+local computeSource = require("arisu.shaders.brush.compute." .. shaderExt) --[[@as string]]
 
 ---@class Compute
 ---@field pipeline hood.ComputePipeline

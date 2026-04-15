@@ -62,12 +62,6 @@ function RenderPlugin:setRenderData(window, vertexData, indexData)
 	ctx.nIndices = #indexData
 end
 
-local pathSep = string.sub(package.config, 1, 1)
-
--- Directory of output package directory in target folder
-local packageDir = debug.getinfo(1, "S").source:sub(2):match("(.-" ..
-	pathSep .. "target" .. pathSep .. "[^" .. pathSep .. "]+)")
-
 local bindings = {
 	centralTexture = 0,
 	centralSampler = isVulkan and 1 or 0, -- Combine for OpenGL
@@ -112,11 +106,11 @@ function RenderPlugin:register(window)
 	local quadPipeline = self.device:createPipeline({
 		layout = quadLayout,
 		vertex = {
-			module = { type = shaderType, source = io.open(packageDir .. pathSep .. "shaders" .. pathSep .. "main.vert." .. shaderExt, "rb"):read("*a") },
+			module = { type = shaderType, source = require("arisu-app.shaders.main.vert." .. shaderExt) },
 			buffers = { vertexDescriptor },
 		},
 		fragment = {
-			module = { type = shaderType, source = io.open(packageDir .. pathSep .. "shaders" .. pathSep .. "main.frag." .. shaderExt, "rb"):read("*a") },
+			module = { type = shaderType, source = require("arisu-app.shaders.main.frag." .. shaderExt) },
 			targets = {
 				{
 					blend = "alpha-blending",
@@ -152,11 +146,11 @@ function RenderPlugin:register(window)
 	local overlayPipeline = self.device:createPipeline({
 		layout = overlayLayout,
 		vertex = {
-			module = { type = shaderType, source = io.open("../arisu/shaders/overlay.vert." .. shaderExt, "rb"):read("*a") },
+			module = { type = shaderType, source = require("arisu.shaders.overlay.vert." .. shaderExt) },
 			buffers = { overlayVertexDescriptor },
 		},
 		fragment = {
-			module = { type = shaderType, source = io.open("../arisu/shaders/overlay.frag." .. shaderExt, "rb"):read("*a") },
+			module = { type = shaderType, source = require("arisu.shaders.overlay.frag." .. shaderExt) },
 			targets = {
 				{
 					blend = "alpha-blending",
