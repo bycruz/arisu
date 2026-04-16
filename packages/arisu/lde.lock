@@ -10,11 +10,11 @@
 			"path": "../arisu-text"
 		},
 		"glapi": {
-			"commit": "9996f5446d158d54ac311591887e7e5d257e845e",
+			"commit": "382def7e3aa0437d36d586c9497d6508bbb2a80f",
 			"git": "https://github.com/codebycruz/glapi"
 		},
 		"hood": {
-			"commit": "5d4bb28703d8f1c17a0e241810145194a51042f0",
+			"commit": "7bd09dd50826d0b1e9cb5ca88b7fc427e91ed4fd",
 			"git": "https://github.com/codebycruz/hood"
 		},
 		"vkapi": {
@@ -27,7 +27,7 @@
 			"optional": true
 		},
 		"winit": {
-			"commit": "2bdfc24193e8728ce4c8c8de645ec49af780b127",
+			"commit": "ed6af8864b130b84edcec7ce704c98c0cd189c6c",
 			"git": "https://github.com/codebycruz/winit"
 		},
 		"x11api": {

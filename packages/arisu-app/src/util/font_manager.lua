@@ -19,7 +19,7 @@ function FontManager.new(textureManager)
 	local defaultBitmap = assert(
 		Bitmap.fromData(
 			{ ymargin = 2, xmargin = 4, gridWidth = 18, gridHeight = 18, characters = characters, perRow = 19 },
-			require("arisu-app.assets.fonts.JetBrainsMono.qoi")
+			require("arisu-app.assets.fonts.JetBrainsMono")
 		),
 		"Failed to load bitmap font"
 	)

@@ -129,7 +129,8 @@ local assetsHandle = io.popen(assetsListCmd)
 if assetsHandle then
 	for srcPath in assetsHandle:lines() do
 		local relPath = srcPath:sub(#packageSourceDir + 2)
-		local outPath = outputDir .. "/" .. relPath .. ".lua"
+		local relPathNoExt = relPath:match("(.+)%.[^%.]+$") or relPath
+		local outPath = outputDir .. pathSep .. relPathNoExt .. ".lua"
 		mkdirp(outPath:match("(.*)" .. pathSep))
 
 		local content = read(srcPath)
