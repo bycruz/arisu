@@ -65,7 +65,7 @@ end
 local bindings = {
 	centralTexture = 0,
 	centralSampler = isVulkan and 1 or 0, -- Combine for OpenGL
-	dimsBuffer = 2,
+	dimsBuffer = 2
 }
 
 ---@param window winit.Window
@@ -89,25 +89,25 @@ function RenderPlugin:register(window)
 		{
 			type = "texture",
 			binding = bindings.centralTexture,
-			visibility = { "FRAGMENT" },
+			visibility = { "FRAGMENT" }
 		},
 		{
 			type = "sampler",
 			binding = bindings.centralSampler,
-			visibility = { "FRAGMENT" },
+			visibility = { "FRAGMENT" }
 		},
 		{
 			type = "buffer",
 			binding = bindings.dimsBuffer,
-			visibility = { "FRAGMENT" },
-		},
+			visibility = { "FRAGMENT" }
+		}
 	})
 
 	local quadPipeline = self.device:createPipeline({
 		layout = quadLayout,
 		vertex = {
 			module = { type = shaderType, source = require("arisu-app.shaders.main.vert." .. shaderExt) },
-			buffers = { vertexDescriptor },
+			buffers = { vertexDescriptor }
 		},
 		fragment = {
 			module = { type = shaderType, source = require("arisu-app.shaders.main.frag." .. shaderExt) },
@@ -115,15 +115,15 @@ function RenderPlugin:register(window)
 				{
 					blend = "alpha-blending",
 					writeMask = hood.ColorWrites.All,
-					format = swapchain.format,
-				},
-			},
+					format = swapchain.format
+				}
+			}
 		},
 		depthStencil = {
 			depthWriteEnabled = true,
 			depthCompare = "less-equal",
-			format = "depth24plus",
-		},
+			format = "depth24plus"
+		}
 	})
 
 	local overlayVertex = self.device:createBuffer({ size = vertexDescriptor:getStride() * 1000, usages = { "VERTEX", "COPY_DST" } })
@@ -139,15 +139,15 @@ function RenderPlugin:register(window)
 		{
 			type = "buffer",
 			binding = 0,
-			visibility = { "FRAGMENT" },
-		},
+			visibility = { "FRAGMENT" }
+		}
 	})
 
 	local overlayPipeline = self.device:createPipeline({
 		layout = overlayLayout,
 		vertex = {
 			module = { type = shaderType, source = require("arisu.shaders.overlay.vert." .. shaderExt) },
-			buffers = { overlayVertexDescriptor },
+			buffers = { overlayVertexDescriptor }
 		},
 		fragment = {
 			module = { type = shaderType, source = require("arisu.shaders.overlay.frag." .. shaderExt) },
@@ -155,16 +155,16 @@ function RenderPlugin:register(window)
 				{
 					blend = "alpha-blending",
 					writeMask = hood.ColorWrites.All,
-					format = "rgba8unorm",
-				},
-			},
-		},
+					format = "rgba8unorm"
+				}
+			}
+		}
 	})
 
 	local depthBuffer = self.device:createTexture({
 		extents = { dim = "2d", width = window.width, height = window.height },
 		format = "depth24plus",
-		usages = { "RENDER_ATTACHMENT" },
+		usages = { "RENDER_ATTACHMENT" }
 	})
 
 	-- Initialize shared resources
@@ -190,7 +190,7 @@ function RenderPlugin:register(window)
 			bindGroup = bindGroup,
 			bindGroupLayout = bindGroupLayout,
 			textureManager = textureManager,
-			fontManager = fontManager,
+			fontManager = fontManager
 		}
 	end
 
@@ -208,7 +208,7 @@ function RenderPlugin:register(window)
 		overlayIndex = overlayIndex,
 		nIndices = 0,
 		depthBuffer = depthBuffer,
-		depthBufferView = depthBuffer:createView({}),
+		depthBufferView = depthBuffer:createView({})
 	}
 
 	self.contexts[window] = ctx
@@ -222,6 +222,15 @@ end
 
 ---@param ctx arisu.plugin.Render.Context
 function RenderPlugin:draw(ctx)
+	local texture = ctx.swapchain:getCurrentTexture()
+	if not texture then
+		local windowCtx = assert(self.windowPlugin:getContext(ctx.window))
+		local ctx = self:getContext(ctx.window)
+		ctx.swapchain = windowCtx.surface:configure(self.device, { presentMode = "fifo" }, ctx.swapchain)
+
+		return
+	end
+
 	local encoder = self.device:createCommandEncoder()
 	encoder:beginRendering({
 		colorAttachments = {
@@ -232,16 +241,16 @@ function RenderPlugin:draw(ctx)
 						r = (math.sin(os.clock()) + 1) / 2,
 						g = 0,
 						b = (math.cos(os.clock()) + 1) / 2,
-						a = 1,
-					},
+						a = 1
+					}
 				},
-				texture = ctx.swapchain:getCurrentTexture():createView({}),
-			},
+				texture = texture:createView({})
+			}
 		},
 		depthStencilAttachment = {
 			op = { type = "clear", depth = 1 },
-			texture = ctx.depthBufferView,
-		},
+			texture = ctx.depthBufferView
+		}
 	})
 	encoder:setPipeline(ctx.quadPipeline)
 	encoder:setBindGroup(0, self.sharedResources.bindGroup)
@@ -253,15 +262,16 @@ function RenderPlugin:draw(ctx)
 
 	local commandBuffer = encoder:finish()
 	self.device.queue:submit(commandBuffer, ctx.swapchain)
+	self.device.queue:present(ctx.swapchain)
 end
 
 ---@param event winit.Event
 ---@param handler winit.EventManager
 function RenderPlugin:event(event, handler)
 	if event.name == "resize" then
-		local ctx = self:getContext(event.window)
-		-- ctx.swapchain.ctx:makeCurrent()
-		-- gl.viewport(0, 0, ctx.window.width, ctx.window.height)
+		-- local windowCtx = assert(self.windowPlugin:getContext(event.window))
+		-- local ctx = self:getContext(event.window)
+		-- ctx.swapchain = windowCtx.surface:configure(self.device, { presentMode = "fifo", oldSwapchain = ctx.swapchain })
 
 		if ffi.os == "Windows" then
 			handler:requestRedraw(event.window)

@@ -688,9 +688,6 @@ function App:event(event, handler)
 	end
 
 	if event.name == "redraw" then
-		local ctx = self.plugins.render:getContext(event.window)
-		self.plugins.render:draw(ctx)
-
 		self.plugins.overlay:clear(event.window)
 
 		if self.overlaySelection then
@@ -744,7 +741,8 @@ function App:event(event, handler)
 		local time = os.clock() - self.startTime
 		self.plugins.overlay:draw(event.window, "marching_ants", time)
 
-		self.plugins.render.device.queue:present(ctx.swapchain)
+		local ctx = self.plugins.render:getContext(event.window)
+		self.plugins.render:draw(ctx)
 
 		if self.overlaySelection or self.overlayLine or self.overlayRectangle or self.overlayCircle then
 			handler:requestRedraw(event.window)
