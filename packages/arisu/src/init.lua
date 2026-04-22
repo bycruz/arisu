@@ -124,6 +124,7 @@ function App.new()
 	self.overlayText = nil
 	self.filePickerPath = ""
 	self.brushesOpen = false
+	self.ribbonOpen = true
 	self.brushSize = 10
 	self.canvasWidthInput = ""
 	self.canvasHeightInput = ""
@@ -646,6 +647,15 @@ function App:view(window)
 				gap = 8
 			})
 			:withChildren({
+				Element.new("div")
+					:withStyle({
+						height = { abs = 20 },
+						width = { rel = 1.0 },
+						align = "center",
+						justify = "center"
+					})
+					:withChildren({ Element.from("<") })
+					:onClick({ type = "RibbonToggled" }),
 				-- Tools: 32 + 3gap + 32 + 3gap + 16 = 86px
 				Element.new("div")
 					:withStyle({ direction = "column", gap = 3, height = { abs = 86 } })
@@ -796,6 +806,23 @@ function App:view(window)
 				end)()
 			})
 
+		local ribbonEl = self.ribbonOpen and sidebar or Element.new("div")
+			:withStyle({
+				direction = "column",
+				width = { abs = 24 },
+				height = { rel = 1.0 },
+				bg = { r = 0.95, g = 0.95, b = 0.95, a = 1.0 },
+				border = { right = { width = 1, color = borderColor } },
+				align = "center",
+				padding = { top = 4 }
+			})
+			:withChildren({
+				Element.new("div")
+					:withStyle({ height = { abs = 20 }, width = { rel = 1.0 }, align = "center", justify = "center" })
+					:withChildren({ Element.from(">") })
+					:onClick({ type = "RibbonToggled" })
+			})
+
 		return Element.new("div")
 			:withStyle({
 				direction = "column",
@@ -805,7 +832,7 @@ function App:view(window)
 				menuBar,
 				Element.new("div")
 					:withStyle({ direction = "row", height = "auto" })
-					:withChildren({ sidebar, makeCanvasArea({ rel = 1.0 }, "auto") }),
+					:withChildren({ ribbonEl, makeCanvasArea({ rel = 1.0 }, "auto") }),
 				statusBar
 			})
 	else
@@ -1205,7 +1232,33 @@ function App:view(window)
 							justify = "center",
 							height = { rel = 0.3 }
 						})
-					})
+					}),
+					Element.new("div")
+						:withStyle({
+							width = { abs = 24 },
+							height = { rel = 1.0 },
+							align = "center",
+							justify = "center",
+							border = { left = { width = 1, color = borderColor } }
+						})
+						:withChildren({ Element.from("^") })
+						:onClick({ type = "RibbonToggled" })
+			})
+
+		local ribbonEl = self.ribbonOpen and toolbar or Element.new("div")
+			:withStyle({
+				height = { abs = 24 },
+				direction = "row",
+				align = "center",
+				justify = "center",
+				bg = { r = 0.95, g = 0.95, b = 0.95, a = 1.0 },
+				border = { bottom = { width = 1, color = borderColor } }
+			})
+			:withChildren({
+				Element.new("div")
+					:withStyle({ width = { abs = 24 }, height = { rel = 1.0 }, align = "center", justify = "center" })
+					:withChildren({ Element.from("v") })
+					:onClick({ type = "RibbonToggled" })
 			})
 
 		return Element.new("div")
@@ -1213,7 +1266,7 @@ function App:view(window)
 				direction = "column",
 				bg = { r = 0.95, g = 0.95, b = 0.95, a = 1.0 }
 			})
-			:withChildren({ menuBar, toolbar, makeCanvasArea("auto"), statusBar })
+			:withChildren({ menuBar, ribbonEl, makeCanvasArea("auto"), statusBar })
 	end
 end
 
@@ -1681,6 +1734,9 @@ function App:update(message, window)
 		return { type = "closeWindow" }
 	elseif message.type == "SaveClicked" then
 		print("Save clicked - not implemented")
+	elseif message.type == "RibbonToggled" then
+		self.ribbonOpen = not self.ribbonOpen
+		self.plugins.ui:refreshView(window)
 	elseif message.type == "BrushesToggled" then
 		self.brushesOpen = not self.brushesOpen
 		self.plugins.ui:refreshView(window)
