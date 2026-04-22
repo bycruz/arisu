@@ -31,6 +31,11 @@ local OverlayPlugin = require("arisu.plugin.overlay")
 --- | { type: "CompleteCurve" }
 --- | { type: "BrushesToggled" }
 --- | { type: "BrushSizeSelected", size: number }
+--- | { type: "CanvasSizeClicked" }
+--- | { type: "CanvasSizePopupClosed" }
+--- | { type: "CanvasWidthChanged", value: string }
+--- | { type: "CanvasHeightChanged", value: string }
+--- | { type: "CanvasSizeSubmit" }
 
 ---@class App.Resources.Icons
 ---@field brush Texture
@@ -91,6 +96,8 @@ local OverlayPlugin = require("arisu.plugin.overlay")
 ---@field overlaySelection { start: { x: number, y: number }, finish: { x: number, y: number }? }?
 ---@field brushesOpen boolean
 ---@field brushSize number
+---@field canvasWidthInput string
+---@field canvasHeightInput string
 local App = {}
 App.__index = App
 
@@ -118,6 +125,8 @@ function App.new()
 	self.filePickerPath = ""
 	self.brushesOpen = false
 	self.brushSize = 10
+	self.canvasWidthInput = ""
+	self.canvasHeightInput = ""
 
 	return self
 end
@@ -259,7 +268,100 @@ function App:filePickerView(window)
 end
 
 ---@param window winit.Window
+function App:canvasSizePickerView(window)
+	local borderColor = { r = 0.8, g = 0.8, b = 0.8, a = 1 }
+	local focusedId = self.plugins.layout:getFocusedId(window)
+	local cursorPos = self.plugins.layout:getCursorPos(window)
+	local focusBorderColor = { r = 0.3, g = 0.5, b = 1, a = 1 }
+
+	local function makeInput(id, value, oninput)
+		local displayValue = value
+		if focusedId == id then
+			displayValue = displayValue:sub(1, cursorPos) .. "|" .. displayValue:sub(cursorPos + 1)
+		else
+			displayValue = #displayValue > 0 and displayValue or " "
+		end
+
+		local inputBorder = focusedId == id and {
+			top    = { width = 2, color = focusBorderColor },
+			bottom = { width = 2, color = focusBorderColor },
+			left   = { width = 2, color = focusBorderColor },
+			right  = { width = 2, color = focusBorderColor }
+		} or {
+			top    = { width = 1, color = borderColor },
+			bottom = { width = 1, color = borderColor },
+			left   = { width = 1, color = borderColor },
+			right  = { width = 1, color = borderColor }
+		}
+
+		return Element.new("div")
+			:withStyle({
+				height = { abs = 26 },
+				bg = { r = 1, g = 1, b = 1, a = 1 },
+				border = inputBorder,
+				padding = { left = 4 },
+				align = "center"
+			})
+			:asTextInput({
+				id = id,
+				value = value,
+				oninput = oninput,
+				onsubmit = function() return { type = "CanvasSizeSubmit" } end
+			})
+			:withChildren({
+				Element.from(displayValue):withStyle({ height = { abs = 14 } })
+			})
+	end
+
+	return Element.new("div")
+		:withStyle({ direction = "column", bg = { r = 0.95, g = 0.95, b = 0.95, a = 1.0 } })
+		:withChildren({
+			Element.new("div")
+				:withStyle({
+					height = { abs = 30 },
+					direction = "row",
+					align = "center",
+					padding = { left = 5 },
+					border = { bottom = { width = 1, color = borderColor } }
+				})
+				:withChildren({ Element.from("Canvas Size") }),
+			Element.new("div")
+				:withStyle({ height = "auto", padding = { all = 10 }, direction = "column", gap = 6 })
+				:withChildren({
+					Element.from("Width:"):withStyle({ height = { abs = 14 } }),
+					makeInput("canvasWidth", self.canvasWidthInput, function(v)
+						return { type = "CanvasWidthChanged", value = v }
+					end),
+					Element.from("Height:"):withStyle({ height = { abs = 14 } }),
+					makeInput("canvasHeight", self.canvasHeightInput, function(v)
+						return { type = "CanvasHeightChanged", value = v }
+					end)
+				}),
+			Element.new("div")
+				:withStyle({
+					height = { abs = 40 },
+					direction = "row",
+					align = "center",
+					justify = "center",
+					gap = 10,
+					border = { top = { width = 1, color = borderColor } }
+				})
+				:withChildren({
+					Element.from("Cancel")
+						:withStyle({ width = { abs = 80 }, align = "center" })
+						:onClick({ type = "CanvasSizePopupClosed" }),
+					Element.from("Apply")
+						:withStyle({ width = { abs = 80 }, align = "center" })
+						:onClick({ type = "CanvasSizeSubmit" })
+				})
+		})
+end
+
+---@param window winit.Window
 function App:view(window)
+	if window.kind == "Canvas Size" then
+		return self:canvasSizePickerView(window)
+	end
 	if window.kind then
 		return self:filePickerView(window)
 	end
@@ -355,16 +457,30 @@ function App:view(window)
 			Element.from("Clear"):withStyle({ width = { abs = 50 } }):onClick({ type = "ClearClicked" })
 		})
 
+	local canvasSizeLabel = self.resources.canvasWidth .. " x " .. self.resources.canvasHeight
+
 	local statusBar = Element.new("div")
 		:withStyle({
 			height = { abs = 30 },
-			width = "auto"
+			width = "auto",
+			direction = "row",
+			align = "center",
+			justify = "space-between",
+			border = { top = { width = 1, color = borderColor } }
 		})
 		:withChildren({
 			Element.from("arisu v0.5.0"):withStyle({
+				width = { abs = 120 },
 				align = "center",
 				padding = { left = 10 }
-			})
+			}),
+			Element.from(canvasSizeLabel)
+				:withStyle({
+					width = { abs = 120 },
+					align = "center",
+					padding = { right = 10 }
+				})
+				:onClick({ type = "CanvasSizeClicked" })
 		})
 
 	local function makeCanvasArea(heightStyle, widthStyle)
@@ -1093,6 +1209,7 @@ function App:event(event, handler)
 		if self.resources then
 			self.plugins.ui:refreshView(event.window)
 		end
+
 		return nil
 	end
 
@@ -1543,6 +1660,35 @@ function App:update(message, window)
 		self.brushSize = message.size
 		self.brushesOpen = false
 		self.plugins.ui:refreshView(window)
+	elseif message.type == "CanvasSizeClicked" then
+		self.canvasWidthInput = tostring(self.resources.canvasWidth)
+		self.canvasHeightInput = tostring(self.resources.canvasHeight)
+		return { type = "createWindow", width = 300, height = 210, kind = "Canvas Size" }
+	elseif message.type == "CanvasSizePopupClosed" then
+		self.canvasWidthInput = ""
+		self.canvasHeightInput = ""
+		return { type = "closeWindow" }
+	elseif message.type == "CanvasWidthChanged" then
+		self.canvasWidthInput = message.value
+		self.plugins.ui:refreshView(window)
+	elseif message.type == "CanvasHeightChanged" then
+		self.canvasHeightInput = message.value
+		self.plugins.ui:refreshView(window)
+	elseif message.type == "CanvasSizeSubmit" then
+		local newWidth = tonumber(self.canvasWidthInput)
+		local newHeight = tonumber(self.canvasHeightInput)
+		if newWidth and newHeight and newWidth > 0 and newHeight > 0 then
+			local textureManager = self.plugins.render.sharedResources.textureManager
+			local canvas = textureManager:allocate(math.floor(newWidth), math.floor(newHeight))
+			self.resources.textures.canvas = canvas
+			self.resources.canvasWidth = math.floor(newWidth)
+			self.resources.canvasHeight = math.floor(newHeight)
+			self.resources.compute = Compute.new(textureManager, canvas, self.plugins.render.device)
+			self.plugins.ui:refreshView(self.plugins.window.mainCtx.window)
+		end
+		self.canvasWidthInput = ""
+		self.canvasHeightInput = ""
+		return { type = "closeWindow" }
 	end
 end
 
