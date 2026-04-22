@@ -95,7 +95,9 @@ function OverlayPlugin:register(window)
 		overlayTexture = overlayTexture,
 		overlayTextureView = overlayTextureView,
 		vertexBuffer = vertexBuffer,
-		indexBuffer = indexBuffer
+		indexBuffer = indexBuffer,
+		canvasWidth = 800,
+		canvasHeight = 600,
 	}
 
 	self.contexts[window] = ctx
@@ -106,6 +108,23 @@ end
 ---@return plugin.Overlay.Context?
 function OverlayPlugin:getContext(window)
 	return self.contexts[window]
+end
+
+---@param window winit.Window
+---@param w number
+---@param h number
+function OverlayPlugin:resize(window, w, h)
+	local ctx = self:getContext(window)
+	if not ctx then return end
+	local textureManager = self.renderPlugin.sharedResources.textureManager
+	ctx.overlayTexture = textureManager:allocate(w, h)
+	ctx.overlayTextureView = textureManager.texture:createView({
+		dimension = "2d",
+		baseArrayLayer = ctx.overlayTexture,
+		layerCount = 1
+	})
+	ctx.canvasWidth = w
+	ctx.canvasHeight = h
 end
 
 ---@param pos number
@@ -249,8 +268,8 @@ function OverlayPlugin:addLine(window, x1, y1, x2, y2, color, thickness, z)
 	thickness = thickness or 1
 	z = z or 99999
 
-	local w = 800
-	local h = 600
+	local w = ctx.canvasWidth
+	local h = ctx.canvasHeight
 
 	local dx = x2 - x1
 	local dy = y2 - y1
@@ -395,7 +414,7 @@ function OverlayPlugin:draw(window, pattern, time)
 		}
 	})
 	encoder:setPipeline(renderCtx.overlayPipeline)
-	encoder:setViewport(0, 0, 800, 600)
+	encoder:setViewport(0, 0, ctx.canvasWidth, ctx.canvasHeight)
 	encoder:setBindGroup(0, ctx.bindGroup)
 	encoder:setVertexBuffer(0, ctx.vertexBuffer)
 	encoder:setIndexBuffer(ctx.indexBuffer, "u32")

@@ -269,24 +269,26 @@ end
 
 ---@param window winit.Window
 function App:canvasSizePickerView(window)
-	local borderColor = { r = 0.8, g = 0.8, b = 0.8, a = 1 }
+	local borderColor = { r = 0.75, g = 0.75, b = 0.78, a = 1 }
 	local focusedId = self.plugins.layout:getFocusedId(window)
 	local cursorPos = self.plugins.layout:getCursorPos(window)
-	local focusBorderColor = { r = 0.3, g = 0.5, b = 1, a = 1 }
+	local accentColor = { r = 0.3, g = 0.5, b = 1, a = 1 }
+	local labelColor = { r = 0.45, g = 0.45, b = 0.5, a = 1 }
 
 	local function makeInput(id, value, oninput)
+		local isFocused = focusedId == id
 		local displayValue = value
-		if focusedId == id then
+		if isFocused then
 			displayValue = displayValue:sub(1, cursorPos) .. "|" .. displayValue:sub(cursorPos + 1)
 		else
 			displayValue = #displayValue > 0 and displayValue or " "
 		end
 
-		local inputBorder = focusedId == id and {
-			top    = { width = 2, color = focusBorderColor },
-			bottom = { width = 2, color = focusBorderColor },
-			left   = { width = 2, color = focusBorderColor },
-			right  = { width = 2, color = focusBorderColor }
+		local inputBorder = isFocused and {
+			top    = { width = 2, color = accentColor },
+			bottom = { width = 2, color = accentColor },
+			left   = { width = 2, color = accentColor },
+			right  = { width = 2, color = accentColor }
 		} or {
 			top    = { width = 1, color = borderColor },
 			bottom = { width = 1, color = borderColor },
@@ -296,10 +298,10 @@ function App:canvasSizePickerView(window)
 
 		return Element.new("div")
 			:withStyle({
-				height = { abs = 26 },
+				height = { abs = 32 },
 				bg = { r = 1, g = 1, b = 1, a = 1 },
 				border = inputBorder,
-				padding = { left = 4 },
+				padding = { left = 8 },
 				align = "center"
 			})
 			:asTextInput({
@@ -313,45 +315,71 @@ function App:canvasSizePickerView(window)
 			})
 	end
 
+	local function makeField(label, id, value, oninput)
+		return Element.new("div")
+			:withStyle({ direction = "column", gap = 5, height = "auto", width = "auto" })
+			:withChildren({
+				Element.from(label):withStyle({ height = { abs = 12 }, fg = labelColor }),
+				makeInput(id, value, oninput)
+			})
+	end
+
 	return Element.new("div")
-		:withStyle({ direction = "column", bg = { r = 0.95, g = 0.95, b = 0.95, a = 1.0 } })
+		:withStyle({ direction = "column", bg = { r = 0.97, g = 0.97, b = 0.98, a = 1.0 } })
 		:withChildren({
+			-- Fields
 			Element.new("div")
 				:withStyle({
-					height = { abs = 30 },
+					height = "auto",
+					padding = { top = 18, bottom = 18, left = 16, right = 16 },
 					direction = "row",
-					align = "center",
-					padding = { left = 5 },
-					border = { bottom = { width = 1, color = borderColor } }
+					gap = 12
 				})
-				:withChildren({ Element.from("Canvas Size") }),
-			Element.new("div")
-				:withStyle({ height = "auto", padding = { all = 10 }, direction = "column", gap = 6 })
 				:withChildren({
-					Element.from("Width:"):withStyle({ height = { abs = 14 } }),
-					makeInput("canvasWidth", self.canvasWidthInput, function(v)
+					makeField("WIDTH", "canvasWidth", self.canvasWidthInput, function(v)
 						return { type = "CanvasWidthChanged", value = v }
 					end),
-					Element.from("Height:"):withStyle({ height = { abs = 14 } }),
-					makeInput("canvasHeight", self.canvasHeightInput, function(v)
+					makeField("HEIGHT", "canvasHeight", self.canvasHeightInput, function(v)
 						return { type = "CanvasHeightChanged", value = v }
 					end)
 				}),
+			-- Footer
 			Element.new("div")
 				:withStyle({
-					height = { abs = 40 },
+					height = { abs = 46 },
 					direction = "row",
 					align = "center",
-					justify = "center",
-					gap = 10,
-					border = { top = { width = 1, color = borderColor } }
+					justify = "space-between",
+					padding = { left = 14, right = 14 },
+					border = { top = { width = 1, color = borderColor } },
+					bg = { r = 0.93, g = 0.93, b = 0.95, a = 1.0 }
 				})
 				:withChildren({
 					Element.from("Cancel")
-						:withStyle({ width = { abs = 80 }, align = "center" })
+						:withStyle({
+							width = { abs = 72 },
+							height = { abs = 28 },
+							align = "center",
+							justify = "center",
+							fg = { r = 0.3, g = 0.3, b = 0.35, a = 1 },
+							border = {
+								top    = { width = 1, color = borderColor },
+								bottom = { width = 1, color = borderColor },
+								left   = { width = 1, color = borderColor },
+								right  = { width = 1, color = borderColor }
+							},
+							bg = { r = 1, g = 1, b = 1, a = 1 }
+						})
 						:onClick({ type = "CanvasSizePopupClosed" }),
 					Element.from("Apply")
-						:withStyle({ width = { abs = 80 }, align = "center" })
+						:withStyle({
+							width = { abs = 72 },
+							height = { abs = 28 },
+							align = "center",
+							justify = "center",
+							fg = { r = 1, g = 1, b = 1, a = 1 },
+							bg = accentColor
+						})
 						:onClick({ type = "CanvasSizeSubmit" })
 				})
 		})
@@ -1289,7 +1317,7 @@ function App:event(event, handler)
 			local fontManager = self.plugins.render.sharedResources.fontManager
 			local overlayCtx = self.plugins.overlay:getContext(event.window)
 
-			local W, H = 800, 600
+			local W, H = self.resources.canvasWidth, self.resources.canvasHeight
 			local buf = ffi.new("uint8_t[?]", W * H * 4, 0)
 
 			local color = self.currentColor
@@ -1663,7 +1691,7 @@ function App:update(message, window)
 	elseif message.type == "CanvasSizeClicked" then
 		self.canvasWidthInput = tostring(self.resources.canvasWidth)
 		self.canvasHeightInput = tostring(self.resources.canvasHeight)
-		return { type = "createWindow", width = 300, height = 210, kind = "Canvas Size" }
+		return { type = "createWindow", width = 340, height = 180, kind = "Canvas Size" }
 	elseif message.type == "CanvasSizePopupClosed" then
 		self.canvasWidthInput = ""
 		self.canvasHeightInput = ""
@@ -1677,13 +1705,16 @@ function App:update(message, window)
 	elseif message.type == "CanvasSizeSubmit" then
 		local newWidth = tonumber(self.canvasWidthInput)
 		local newHeight = tonumber(self.canvasHeightInput)
-		if newWidth and newHeight and newWidth > 0 and newHeight > 0 then
+		if newWidth and newHeight and newWidth > 0 and newHeight > 0
+			and newWidth <= 1024 and newHeight <= 1024 then
+			local w, h = math.floor(newWidth), math.floor(newHeight)
 			local textureManager = self.plugins.render.sharedResources.textureManager
-			local canvas = textureManager:allocate(math.floor(newWidth), math.floor(newHeight))
+			local canvas = textureManager:allocate(w, h)
 			self.resources.textures.canvas = canvas
-			self.resources.canvasWidth = math.floor(newWidth)
-			self.resources.canvasHeight = math.floor(newHeight)
+			self.resources.canvasWidth = w
+			self.resources.canvasHeight = h
 			self.resources.compute = Compute.new(textureManager, canvas, self.plugins.render.device)
+			self.plugins.overlay:resize(self.plugins.window.mainCtx.window, w, h)
 			self.plugins.ui:refreshView(self.plugins.window.mainCtx.window)
 		end
 		self.canvasWidthInput = ""

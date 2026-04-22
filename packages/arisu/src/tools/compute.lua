@@ -93,8 +93,8 @@ function Compute.new(textureManager, canvas, device)
 		module = { type = shaderType, source = computeSource },
 	})
 
-	-- TODO: Un-hard code this when canvas is passed as a Texture with width/height
-	local tempLayer = textureManager:allocate(800, 600)
+	local cw, ch = textureManager:getSize(canvas)
+	local tempLayer = textureManager:allocate(cw, ch)
 
 	local maxPixels = 1024 * 1024
 	local self = setmetatable({
@@ -211,8 +211,9 @@ function Compute:drawLine(x1, y1, x2, y2, thickness, color)
 	self.inputs.color[3] = color.a
 	self.inputs.tool = TOOL_LINE
 
-	local groupsX = math.ceil(800 / WORK_GROUP_SIZE)
-	local groupsY = math.ceil(600 / WORK_GROUP_SIZE)
+	local cw, ch = self.textureManager:getSize(self.canvas)
+	local groupsX = math.ceil(cw / WORK_GROUP_SIZE)
+	local groupsY = math.ceil(ch / WORK_GROUP_SIZE)
 
 	self:updateInputs()
 	local encoder = self.device:createCommandEncoder()
@@ -242,8 +243,9 @@ function Compute:drawRectangle(x1, y1, x2, y2, thickness, color)
 	self.inputs.color[3] = color.a
 	self.inputs.tool = TOOL_RECTANGLE
 
-	local groupsX = math.ceil(800 / WORK_GROUP_SIZE)
-	local groupsY = math.ceil(600 / WORK_GROUP_SIZE)
+	local cw, ch = self.textureManager:getSize(self.canvas)
+	local groupsX = math.ceil(cw / WORK_GROUP_SIZE)
+	local groupsY = math.ceil(ch / WORK_GROUP_SIZE)
 
 	self:updateInputs()
 	local encoder = self.device:createCommandEncoder()
@@ -273,8 +275,9 @@ function Compute:drawEllipse(x1, y1, x2, y2, thickness, color)
 	self.inputs.color[3] = color.a
 	self.inputs.tool = TOOL_CIRCLE
 
-	local groupsX = math.ceil(800 / WORK_GROUP_SIZE)
-	local groupsY = math.ceil(600 / WORK_GROUP_SIZE)
+	local cw, ch = self.textureManager:getSize(self.canvas)
+	local groupsX = math.ceil(cw / WORK_GROUP_SIZE)
+	local groupsY = math.ceil(ch / WORK_GROUP_SIZE)
 
 	self:updateInputs()
 	local encoder = self.device:createCommandEncoder()
