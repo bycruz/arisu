@@ -367,10 +367,11 @@ function App:view(window)
 			})
 		})
 
-	local function makeCanvasArea(heightStyle)
+	local function makeCanvasArea(heightStyle, widthStyle)
 		return Element.new("div")
 			:withStyle({
 				height = heightStyle,
+				width = widthStyle or { rel = 1.0 },
 				align = "center",
 				justify = "center",
 				bg = { r = 0.7, g = 0.7, b = 0.8, a = 1.0 }
@@ -660,7 +661,7 @@ function App:view(window)
 				menuBar,
 				Element.new("div")
 					:withStyle({ direction = "row", height = "auto" })
-					:withChildren({ sidebar, makeCanvasArea({ rel = 1.0 }) }),
+					:withChildren({ sidebar, makeCanvasArea({ rel = 1.0 }, "auto") }),
 				statusBar
 			})
 	else
