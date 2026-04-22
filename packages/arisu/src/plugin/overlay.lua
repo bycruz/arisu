@@ -352,6 +352,7 @@ function OverlayPlugin:draw(window, pattern, time)
 		},
 	})
 	encoder:setPipeline(renderCtx.overlayPipeline)
+	encoder:setViewport(0, 0, 800, 600)
 	encoder:setBindGroup(0, ctx.bindGroup)
 	encoder:setVertexBuffer(0, ctx.vertexBuffer)
 	encoder:setIndexBuffer(ctx.indexBuffer, "u32")
