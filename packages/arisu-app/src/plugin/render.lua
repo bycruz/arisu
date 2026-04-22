@@ -231,7 +231,7 @@ function RenderPlugin:draw(ctx)
 		ctx.depthBufferView:destroy()
 		ctx.depthBuffer:destroy()
 		ctx.depthBuffer = self.device:createTexture({
-			extents = { dim = "2d", width = ctx.window.width, height = ctx.window.height },
+			extents = { dim = "2d", width = ctx.swapchain.width, height = ctx.swapchain.height },
 			format = "depth24plus",
 			usages = { "RENDER_ATTACHMENT" }
 		})
@@ -263,7 +263,7 @@ function RenderPlugin:draw(ctx)
 	})
 	encoder:setPipeline(ctx.quadPipeline)
 	encoder:setBindGroup(0, self.sharedResources.bindGroup)
-	encoder:setViewport(0, 0, ctx.window.width, ctx.window.height)
+	encoder:setViewport(0, 0, ctx.swapchain.width, ctx.swapchain.height)
 	encoder:setVertexBuffer(0, ctx.quadVertex)
 	encoder:setIndexBuffer(ctx.quadIndex, "u32")
 	encoder:drawIndexed(ctx.nIndices, 1)
@@ -279,15 +279,6 @@ end
 ---@param event winit.Event
 ---@param handler winit.EventManager
 function RenderPlugin:event(event, handler)
-	if event.name == "resize" then
-		-- local windowCtx = assert(self.windowPlugin:getContext(event.window))
-		-- local ctx = self:getContext(event.window)
-		-- ctx.swapchain = windowCtx.surface:configure(self.device, { presentMode = "fifo", oldSwapchain = ctx.swapchain })
-
-		if ffi.os == "Windows" then
-			handler:requestRedraw(event.window)
-		end
-	end
 end
 
 return RenderPlugin

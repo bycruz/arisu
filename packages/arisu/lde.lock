@@ -14,11 +14,11 @@
 			"git": "https://github.com/bycruz/glapi"
 		},
 		"hood": {
-			"commit": "7eeccd2ebf2514e48d89045fd761444e11df5503",
+			"commit": "0db84422ef6994af60ea56d81bf40ee808248cf7",
 			"git": "https://github.com/bycruz/hood"
 		},
 		"vkapi": {
-			"commit": "05879db6237dc2aebb66b609003df5c3a124230e",
+			"commit": "4e692b3cdcde2c55bca7650db75ce3c481354f1f",
 			"git": "https://github.com/bycruz/vkapi"
 		},
 		"winapi": {
