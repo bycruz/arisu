@@ -29,11 +29,15 @@ local window = require("winit")
 local Arisu = {}
 
 ---@alias arisu.New<T> fun(): arisu.App<T>
----@alias arisu.Update<T> fun(self: arisu.App<T>, message: T, window: winit.Window)
+---@alias arisu.Update<T> fun(self: arisu.App<T>, message: T, window: winit.Window): arisu.Task?
 ---@alias arisu.View<T> fun(self: arisu.App<T>, window: winit.Window): arisu.Element
 ---@alias arisu.Event<T> fun(self: arisu.App<T>, event: winit.Event, handler: winit.EventManager): any
 
 ---@class arisu.App<T>: { new: arisu.New<T>, update: arisu.Update<T>, view: arisu.View<T>, event: arisu.Event<T> }
+
+---@alias arisu.Task
+--- | { type: "createWindow", width: number?, height: number?, kind: string? }
+--- | { type: "closeWindow" }
 
 ---@generic Message
 ---@param appStatic arisu.App<Message>
@@ -48,7 +52,16 @@ function Arisu.run(appStatic)
 
 		local message = app:event(event, handler)
 		if message then
-			app:update(message, event.window)
+			local task = app:update(message, event.window)
+			if task then
+				if task.type == "createWindow" then
+					local w = window.Window.new(eventLoop, task.width or 800, task.height or 600)
+					if task.kind then w.kind = task.kind end
+					eventLoop:register(w)
+				elseif task.type == "closeWindow" and event.window then
+					handler:close(event.window)
+				end
+			end
 		end
 	end)
 end

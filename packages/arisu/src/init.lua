@@ -20,6 +20,7 @@ local OverlayPlugin = require("arisu.plugin.overlay")
 --- | { type: "ClearClicked" }
 --- | { type: "SaveClicked" }
 --- | { type: "OpenClicked" }
+--- | { type: "OpenPopupClosed" }
 --- | { type: "StartDrawing", x: number, y: number, elementWidth: number, elementHeight: number }
 --- | { type: "StopDrawing", x: number, y: number, elementWidth: number, elementHeight: number }
 --- | { type: "Hovered", x: number, y: number, elementWidth: number, elementHeight: number }
@@ -167,7 +168,59 @@ local function map(list, fn)
 end
 
 ---@param window winit.Window
+function App:filePickerView(window)
+	local borderColor = { r = 0.8, g = 0.8, b = 0.8, a = 1 }
+	return Element.new("div")
+		:withStyle({
+			direction = "column",
+			bg = { r = 0.95, g = 0.95, b = 0.95, a = 1.0 }
+		})
+		:withChildren({
+			Element.new("div")
+				:withStyle({
+					height = { abs = 30 },
+					direction = "row",
+					align = "center",
+					gap = 5,
+					padding = { left = 5 },
+					border = { bottom = { width = 1, color = borderColor } }
+				})
+				:withChildren({
+					Element.from("Open File"):withStyle({ width = { abs = 100 } })
+				}),
+			Element.new("div")
+				:withStyle({
+					height = "auto",
+					align = "center",
+					justify = "center"
+				})
+				:withChildren({
+					Element.from("File browser not yet implemented")
+						:withStyle({ padding = { all = 20 } })
+				}),
+			Element.new("div")
+				:withStyle({
+					height = { abs = 40 },
+					direction = "row",
+					align = "center",
+					justify = "center",
+					gap = 10,
+					border = { top = { width = 1, color = borderColor } }
+				})
+				:withChildren({
+					Element.from("Cancel")
+						:withStyle({ width = { abs = 80 }, align = "center" })
+						:onClick({ type = "OpenPopupClosed" })
+				})
+		})
+end
+
+---@param window winit.Window
 function App:view(window)
+	if window.kind then
+		return self:filePickerView(window)
+	end
+
 	local disabledColor = { r = 0.7, g = 0.7, b = 0.7, a = 1.0 }
 	local selectedColor = { r = 0.7, g = 0.7, b = 1.0, a = 1.0 }
 	local borderColor = { r = 0.8, g = 0.8, b = 0.8, a = 1 }
@@ -964,14 +1017,16 @@ end
 ---@param window winit.Window
 function App:update(message, window)
 	if message.type == "onWindowCreate" then
-		window:setTitle("Arisu")
+		local isMain = window == self.plugins.window.mainCtx.window
 
-		-- Now we can initialize assets for a specific window
-		self.plugins.render:register(window)
-		self.plugins.overlay:register(window)
-
-		if window == self.plugins.window.mainCtx.window then
+		if isMain then
+			window:setTitle("Arisu")
+			self.plugins.render:register(window)
+			self.plugins.overlay:register(window)
 			self.resources = self:makeResources()
+		else
+			window:setTitle(window.kind or "Arisu")
+			self.plugins.render:register(window)
 		end
 
 		self.plugins.layout:register(window)
@@ -1172,7 +1227,9 @@ function App:update(message, window)
 		self.resources.compute = Compute.new(textureManager, canvas, self.plugins.render.device)
 		self.plugins.ui:refreshView(window)
 	elseif message.type == "OpenClicked" then
-		print("Open clicked - not implemented")
+		return { type = "createWindow", width = 500, height = 350, kind = "Open File" }
+	elseif message.type == "OpenPopupClosed" then
+		return { type = "closeWindow" }
 	elseif message.type == "SaveClicked" then
 		print("Save clicked - not implemented")
 	end

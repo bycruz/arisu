@@ -212,6 +212,7 @@ function RenderPlugin:register(window)
 	}
 
 	self.contexts[window] = ctx
+	self.mainCtx = self.mainCtx or ctx
 	return ctx
 end
 
