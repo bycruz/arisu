@@ -56,12 +56,12 @@ local function addBorderQuad(bx, by, bw, bh, color, z, windowWidth, windowHeight
 end
 
 ---@param layout arisu.ComputedLayout
-local function generateLayoutQuads(layout, parentX, parentY, vertices, indices, windowWidth, windowHeight)
+local function generateLayoutQuads(layout, parentX, parentY, vertices, indices, windowWidth, windowHeight, parentZ)
 	local x = (parentX or 0) + (layout.x or 0)
 	local y = (parentY or 0) + (layout.y or 0)
 	local width = layout.width
 	local height = layout.height
-	local z = layout.zIndex or 0
+	local z = math.max(layout.zIndex or 0, parentZ or 0)
 
 	local color = layout.style.bg or { r = 1.0, g = 1.0, b = 1.0, a = 1.0 }
 	local baseIdx = #vertices / 10
@@ -136,7 +136,7 @@ local function generateLayoutQuads(layout, parentX, parentY, vertices, indices, 
 
 	if layout.children then
 		for _, child in ipairs(layout.children) do
-			generateLayoutQuads(child, x, y, vertices, indices, windowWidth, windowHeight)
+			generateLayoutQuads(child, x, y, vertices, indices, windowWidth, windowHeight, z)
 		end
 	end
 end
