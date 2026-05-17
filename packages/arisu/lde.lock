@@ -17,11 +17,11 @@
 			"git": "https://github.com/lde-org/fs"
 		},
 		"glapi": {
-			"commit": "c53fe7a1fa854523a74ef083dd586a53809dba6e",
+			"commit": "7c3512859b13eeae7a01f1a39c8dc9a1318d3929",
 			"git": "https://github.com/bycruz/glapi"
 		},
 		"hood": {
-			"commit": "a3b76d865ac238d9238008f9785e06e3bfb53b71",
+			"commit": "f7d56218cd02895f4f3d019b9a253b645b234289",
 			"git": "https://github.com/bycruz/hood"
 		},
 		"path": {
@@ -33,17 +33,17 @@
 			"git": "https://github.com/bycruz/vkapi"
 		},
 		"winapi": {
-			"commit": "f01d2f4646a1b3e16d344bf5a7f8e29f9805f611",
-			"git": "https://github.com/codebycruz/winapi",
+			"commit": "893461f3cbf0fd9a0bcd3cf19a8873ceae3c7831",
+			"git": "https://github.com/bycruz/winapi",
 			"optional": true
 		},
 		"winit": {
-			"commit": "a5b54bbde20dc60bf4cf0232fba969060b81cf78",
+			"commit": "d43f278a2512fdd33858608f5efe5f6df2ae1abd",
 			"git": "https://github.com/bycruz/winit"
 		},
 		"x11api": {
-			"commit": "fa2d75b47ea0b5bd35254bcbfcff7188fbb70053",
-			"git": "https://github.com/codebycruz/x11api",
+			"commit": "af529c46d5563049040d692c004d842bb1b4e7a1",
+			"git": "https://github.com/bycruz/x11api",
 			"optional": true
 		}
 	},

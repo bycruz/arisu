@@ -1,0 +1,19 @@
+{
+	"$schema": "https://raw.githubusercontent.com/sumneko/vscode-lua/master/setting/schema.json",
+	"diagnostics": {
+		"disable": [
+			"duplicate-doc-field",
+			"duplicate-doc-field",
+			"duplicate-index",
+			"duplicate-set-field",
+			"duplicate-doc-alias"
+		]
+	},
+	"runtime": {
+		"version": "LuaJIT",
+		"path": ["./target/?.lua", "./target/?/init.lua"]
+	},
+	"workspace": {
+		"library": ["target"]
+	}
+}

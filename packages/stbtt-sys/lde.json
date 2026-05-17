@@ -1,0 +1,10 @@
+{
+	"name": "stbtt-sys",
+	"version": "0.1.0",
+	"dependencies": {},
+	"devDependencies": {
+		"lde-build": {
+			"git": "https://github.com/lde-org/lde"
+		}
+	}
+}
