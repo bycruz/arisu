@@ -190,65 +190,65 @@ local libName      = sep == "\\" and "stbtt.dll" or
 	(jit.os == "OSX" and "libstbtt.dylib" or "libstbtt.so")
 
 ---@class stbtt.Fns
----@field stbtt_BakeFontBitmap fun(data:ffi.cdata*, offset:integer, pixel_height:number, pixels:ffi.cdata*, pw:integer, ph:integer, first_char:integer, num_chars:integer, chardata:ffi.cdata*): integer
----@field stbtt_GetBakedQuad fun(chardata:ffi.cdata*, pw:integer, ph:integer, char_index:integer, xpos:ffi.cdata*, ypos:ffi.cdata*, q:ffi.cdata*, opengl_fillrule:integer)
+---@field stbtt_BakeFontBitmap fun(data:ffi.cdata*, offset:integer, pixel_height:number, pixels:ffi.cdata*, pw:integer, ph:integer, first_char:integer, num_chars:integer, chardata:stbtt.ffi.BakedChar): integer
+---@field stbtt_GetBakedQuad fun(chardata:stbtt.ffi.BakedChar, pw:integer, ph:integer, char_index:integer, xpos:ffi.cdata*, ypos:ffi.cdata*, q:stbtt.ffi.AlignedQuad, opengl_fillrule:integer)
 ---@field stbtt_GetScaledFontVMetrics fun(fontdata:ffi.cdata*, index:integer, size:number, ascent:ffi.cdata*, descent:ffi.cdata*, lineGap:ffi.cdata*)
----@field stbtt_PackBegin fun(spc:ffi.cdata*, pixels:ffi.cdata*, width:integer, height:integer, stride_in_bytes:integer, padding:integer, alloc_context:ffi.cdata*): integer
----@field stbtt_PackEnd fun(spc:ffi.cdata*)
----@field stbtt_PackFontRange fun(spc:ffi.cdata*, fontdata:ffi.cdata*, font_index:integer, font_size:number, first_unicode_codepoint_in_range:integer, num_chars_in_range:integer, chardata_for_range:ffi.cdata*): integer
----@field stbtt_PackFontRanges fun(spc:ffi.cdata*, fontdata:ffi.cdata*, font_index:integer, ranges:ffi.cdata*, num_ranges:integer): integer
----@field stbtt_PackSetOversampling fun(spc:ffi.cdata*, h_oversample:integer, v_oversample:integer)
----@field stbtt_PackSetSkipMissingCodepoints fun(spc:ffi.cdata*, skip:integer)
----@field stbtt_GetPackedQuad fun(chardata:ffi.cdata*, pw:integer, ph:integer, char_index:integer, xpos:ffi.cdata*, ypos:ffi.cdata*, q:ffi.cdata*, align_to_integer:integer)
----@field stbtt_PackFontRangesGatherRects fun(spc:ffi.cdata*, info:ffi.cdata*, ranges:ffi.cdata*, num_ranges:integer, rects:ffi.cdata*): integer
----@field stbtt_PackFontRangesPackRects fun(spc:ffi.cdata*, rects:ffi.cdata*, num_rects:integer)
----@field stbtt_PackFontRangesRenderIntoRects fun(spc:ffi.cdata*, info:ffi.cdata*, ranges:ffi.cdata*, num_ranges:integer, rects:ffi.cdata*): integer
+---@field stbtt_PackBegin fun(spc:stbtt.ffi.PackContext, pixels:ffi.cdata*, width:integer, height:integer, stride_in_bytes:integer, padding:integer, alloc_context:ffi.cdata*): integer
+---@field stbtt_PackEnd fun(spc:stbtt.ffi.PackContext)
+---@field stbtt_PackFontRange fun(spc:stbtt.ffi.PackContext, fontdata:ffi.cdata*, font_index:integer, font_size:number, first_unicode_codepoint_in_range:integer, num_chars_in_range:integer, chardata_for_range:stbtt.ffi.PackedChar): integer
+---@field stbtt_PackFontRanges fun(spc:stbtt.ffi.PackContext, fontdata:ffi.cdata*, font_index:integer, ranges:stbtt.ffi.PackRange, num_ranges:integer): integer
+---@field stbtt_PackSetOversampling fun(spc:stbtt.ffi.PackContext, h_oversample:integer, v_oversample:integer)
+---@field stbtt_PackSetSkipMissingCodepoints fun(spc:stbtt.ffi.PackContext, skip:integer)
+---@field stbtt_GetPackedQuad fun(chardata:stbtt.ffi.PackedChar, pw:integer, ph:integer, char_index:integer, xpos:ffi.cdata*, ypos:ffi.cdata*, q:stbtt.ffi.AlignedQuad, align_to_integer:integer)
+---@field stbtt_PackFontRangesGatherRects fun(spc:stbtt.ffi.PackContext, info:stbtt.ffi.FontInfo, ranges:stbtt.ffi.PackRange, num_ranges:integer, rects:stbtt.ffi.Rect): integer
+---@field stbtt_PackFontRangesPackRects fun(spc:stbtt.ffi.PackContext, rects:stbtt.ffi.Rect, num_rects:integer)
+---@field stbtt_PackFontRangesRenderIntoRects fun(spc:stbtt.ffi.PackContext, info:stbtt.ffi.FontInfo, ranges:stbtt.ffi.PackRange, num_ranges:integer, rects:stbtt.ffi.Rect): integer
 ---@field stbtt_GetNumberOfFonts fun(data:ffi.cdata*): integer
 ---@field stbtt_GetFontOffsetForIndex fun(data:ffi.cdata*, index:integer): integer
----@field stbtt_InitFont fun(info:ffi.cdata*, data:ffi.cdata*, offset:integer): integer
----@field stbtt_FindGlyphIndex fun(info:ffi.cdata*, unicode_codepoint:integer): integer
----@field stbtt_ScaleForPixelHeight fun(info:ffi.cdata*, pixels:number): number
----@field stbtt_ScaleForMappingEmToPixels fun(info:ffi.cdata*, pixels:number): number
----@field stbtt_GetFontVMetrics fun(info:ffi.cdata*, ascent:ffi.cdata*, descent:ffi.cdata*, lineGap:ffi.cdata*)
----@field stbtt_GetFontVMetricsOS2 fun(info:ffi.cdata*, typoAscent:ffi.cdata*, typoDescent:ffi.cdata*, typoLineGap:ffi.cdata*): integer
----@field stbtt_GetFontBoundingBox fun(info:ffi.cdata*, x0:ffi.cdata*, y0:ffi.cdata*, x1:ffi.cdata*, y1:ffi.cdata*)
----@field stbtt_GetCodepointHMetrics fun(info:ffi.cdata*, codepoint:integer, advanceWidth:ffi.cdata*, leftSideBearing:ffi.cdata*)
----@field stbtt_GetCodepointKernAdvance fun(info:ffi.cdata*, ch1:integer, ch2:integer): integer
----@field stbtt_GetGlyphHMetrics fun(info:ffi.cdata*, glyph_index:integer, advanceWidth:ffi.cdata*, leftSideBearing:ffi.cdata*)
----@field stbtt_GetGlyphKernAdvance fun(info:ffi.cdata*, glyph1:integer, glyph2:integer): integer
----@field stbtt_GetCodepointBox fun(info:ffi.cdata*, codepoint:integer, x0:ffi.cdata*, y0:ffi.cdata*, x1:ffi.cdata*, y1:ffi.cdata*): integer
----@field stbtt_GetGlyphBox fun(info:ffi.cdata*, glyph_index:integer, x0:ffi.cdata*, y0:ffi.cdata*, x1:ffi.cdata*, y1:ffi.cdata*): integer
----@field stbtt_IsGlyphEmpty fun(info:ffi.cdata*, glyph_index:integer): integer
----@field stbtt_GetKerningTableLength fun(info:ffi.cdata*): integer
----@field stbtt_GetKerningTable fun(info:ffi.cdata*, table:ffi.cdata*, table_length:integer): integer
----@field stbtt_GetCodepointShape fun(info:ffi.cdata*, unicode_codepoint:integer, vertices:ffi.cdata*): integer
----@field stbtt_GetGlyphShape fun(info:ffi.cdata*, glyph_index:integer, vertices:ffi.cdata*): integer
----@field stbtt_FreeShape fun(info:ffi.cdata*, vertices:ffi.cdata*)
----@field stbtt_FindSVGDoc fun(info:ffi.cdata*, gl:integer): ffi.cdata*
----@field stbtt_GetCodepointSVG fun(info:ffi.cdata*, unicode_codepoint:integer, svg:ffi.cdata*): integer
----@field stbtt_GetGlyphSVG fun(info:ffi.cdata*, gl:integer, svg:ffi.cdata*): integer
+---@field stbtt_InitFont fun(info:stbtt.ffi.FontInfo, data:ffi.cdata*, offset:integer): integer
+---@field stbtt_FindGlyphIndex fun(info:stbtt.ffi.FontInfo, unicode_codepoint:integer): integer
+---@field stbtt_ScaleForPixelHeight fun(info:stbtt.ffi.FontInfo, pixels:number): number
+---@field stbtt_ScaleForMappingEmToPixels fun(info:stbtt.ffi.FontInfo, pixels:number): number
+---@field stbtt_GetFontVMetrics fun(info:stbtt.ffi.FontInfo, ascent:ffi.cdata*, descent:ffi.cdata*, lineGap:ffi.cdata*)
+---@field stbtt_GetFontVMetricsOS2 fun(info:stbtt.ffi.FontInfo, typoAscent:ffi.cdata*, typoDescent:ffi.cdata*, typoLineGap:ffi.cdata*): integer
+---@field stbtt_GetFontBoundingBox fun(info:stbtt.ffi.FontInfo, x0:ffi.cdata*, y0:ffi.cdata*, x1:ffi.cdata*, y1:ffi.cdata*)
+---@field stbtt_GetCodepointHMetrics fun(info:stbtt.ffi.FontInfo, codepoint:integer, advanceWidth:ffi.cdata*, leftSideBearing:ffi.cdata*)
+---@field stbtt_GetCodepointKernAdvance fun(info:stbtt.ffi.FontInfo, ch1:integer, ch2:integer): integer
+---@field stbtt_GetGlyphHMetrics fun(info:stbtt.ffi.FontInfo, glyph_index:integer, advanceWidth:ffi.cdata*, leftSideBearing:ffi.cdata*)
+---@field stbtt_GetGlyphKernAdvance fun(info:stbtt.ffi.FontInfo, glyph1:integer, glyph2:integer): integer
+---@field stbtt_GetCodepointBox fun(info:stbtt.ffi.FontInfo, codepoint:integer, x0:ffi.cdata*, y0:ffi.cdata*, x1:ffi.cdata*, y1:ffi.cdata*): integer
+---@field stbtt_GetGlyphBox fun(info:stbtt.ffi.FontInfo, glyph_index:integer, x0:ffi.cdata*, y0:ffi.cdata*, x1:ffi.cdata*, y1:ffi.cdata*): integer
+---@field stbtt_IsGlyphEmpty fun(info:stbtt.ffi.FontInfo, glyph_index:integer): integer
+---@field stbtt_GetKerningTableLength fun(info:stbtt.ffi.FontInfo): integer
+---@field stbtt_GetKerningTable fun(info:stbtt.ffi.FontInfo, table:stbtt.ffi.KerningEntry, table_length:integer): integer
+---@field stbtt_GetCodepointShape fun(info:stbtt.ffi.FontInfo, unicode_codepoint:integer, vertices:ffi.cdata*): integer
+---@field stbtt_GetGlyphShape fun(info:stbtt.ffi.FontInfo, glyph_index:integer, vertices:ffi.cdata*): integer
+---@field stbtt_FreeShape fun(info:stbtt.ffi.FontInfo, vertices:stbtt.ffi.Vertex)
+---@field stbtt_FindSVGDoc fun(info:stbtt.ffi.FontInfo, gl:integer): ffi.cdata*
+---@field stbtt_GetCodepointSVG fun(info:stbtt.ffi.FontInfo, unicode_codepoint:integer, svg:ffi.cdata*): integer
+---@field stbtt_GetGlyphSVG fun(info:stbtt.ffi.FontInfo, gl:integer, svg:ffi.cdata*): integer
 ---@field stbtt_FreeBitmap fun(bitmap:ffi.cdata*, userdata:ffi.cdata*)
----@field stbtt_GetCodepointBitmap fun(info:ffi.cdata*, scale_x:number, scale_y:number, codepoint:integer, width:ffi.cdata*, height:ffi.cdata*, xoff:ffi.cdata*, yoff:ffi.cdata*): ffi.cdata*
----@field stbtt_GetCodepointBitmapSubpixel fun(info:ffi.cdata*, scale_x:number, scale_y:number, shift_x:number, shift_y:number, codepoint:integer, width:ffi.cdata*, height:ffi.cdata*, xoff:ffi.cdata*, yoff:ffi.cdata*): ffi.cdata*
----@field stbtt_MakeCodepointBitmap fun(info:ffi.cdata*, output:ffi.cdata*, out_w:integer, out_h:integer, out_stride:integer, scale_x:number, scale_y:number, codepoint:integer)
----@field stbtt_MakeCodepointBitmapSubpixel fun(info:ffi.cdata*, output:ffi.cdata*, out_w:integer, out_h:integer, out_stride:integer, scale_x:number, scale_y:number, shift_x:number, shift_y:number, codepoint:integer)
----@field stbtt_MakeCodepointBitmapSubpixelPrefilter fun(info:ffi.cdata*, output:ffi.cdata*, out_w:integer, out_h:integer, out_stride:integer, scale_x:number, scale_y:number, shift_x:number, shift_y:number, oversample_x:integer, oversample_y:integer, sub_x:ffi.cdata*, sub_y:ffi.cdata*, codepoint:integer)
----@field stbtt_GetCodepointBitmapBox fun(info:ffi.cdata*, codepoint:integer, scale_x:number, scale_y:number, ix0:ffi.cdata*, iy0:ffi.cdata*, ix1:ffi.cdata*, iy1:ffi.cdata*)
----@field stbtt_GetCodepointBitmapBoxSubpixel fun(info:ffi.cdata*, codepoint:integer, scale_x:number, scale_y:number, shift_x:number, shift_y:number, ix0:ffi.cdata*, iy0:ffi.cdata*, ix1:ffi.cdata*, iy1:ffi.cdata*)
----@field stbtt_GetGlyphBitmap fun(info:ffi.cdata*, scale_x:number, scale_y:number, glyph:integer, width:ffi.cdata*, height:ffi.cdata*, xoff:ffi.cdata*, yoff:ffi.cdata*): ffi.cdata*
----@field stbtt_GetGlyphBitmapSubpixel fun(info:ffi.cdata*, scale_x:number, scale_y:number, shift_x:number, shift_y:number, glyph:integer, width:ffi.cdata*, height:ffi.cdata*, xoff:ffi.cdata*, yoff:ffi.cdata*): ffi.cdata*
----@field stbtt_MakeGlyphBitmap fun(info:ffi.cdata*, output:ffi.cdata*, out_w:integer, out_h:integer, out_stride:integer, scale_x:number, scale_y:number, glyph:integer)
----@field stbtt_MakeGlyphBitmapSubpixel fun(info:ffi.cdata*, output:ffi.cdata*, out_w:integer, out_h:integer, out_stride:integer, scale_x:number, scale_y:number, shift_x:number, shift_y:number, glyph:integer)
----@field stbtt_MakeGlyphBitmapSubpixelPrefilter fun(info:ffi.cdata*, output:ffi.cdata*, out_w:integer, out_h:integer, out_stride:integer, scale_x:number, scale_y:number, shift_x:number, shift_y:number, oversample_x:integer, oversample_y:integer, sub_x:ffi.cdata*, sub_y:ffi.cdata*, glyph:integer)
----@field stbtt_GetGlyphBitmapBox fun(info:ffi.cdata*, glyph:integer, scale_x:number, scale_y:number, ix0:ffi.cdata*, iy0:ffi.cdata*, ix1:ffi.cdata*, iy1:ffi.cdata*)
----@field stbtt_GetGlyphBitmapBoxSubpixel fun(info:ffi.cdata*, glyph:integer, scale_x:number, scale_y:number, shift_x:number, shift_y:number, ix0:ffi.cdata*, iy0:ffi.cdata*, ix1:ffi.cdata*, iy1:ffi.cdata*)
----@field stbtt_Rasterize fun(result:ffi.cdata*, flatness_in_pixels:number, vertices:ffi.cdata*, num_verts:integer, scale_x:number, scale_y:number, shift_x:number, shift_y:number, x_off:integer, y_off:integer, invert:integer, userdata:ffi.cdata*)
+---@field stbtt_GetCodepointBitmap fun(info:stbtt.ffi.FontInfo, scale_x:number, scale_y:number, codepoint:integer, width:ffi.cdata*, height:ffi.cdata*, xoff:ffi.cdata*, yoff:ffi.cdata*): ffi.cdata*
+---@field stbtt_GetCodepointBitmapSubpixel fun(info:stbtt.ffi.FontInfo, scale_x:number, scale_y:number, shift_x:number, shift_y:number, codepoint:integer, width:ffi.cdata*, height:ffi.cdata*, xoff:ffi.cdata*, yoff:ffi.cdata*): ffi.cdata*
+---@field stbtt_MakeCodepointBitmap fun(info:stbtt.ffi.FontInfo, output:ffi.cdata*, out_w:integer, out_h:integer, out_stride:integer, scale_x:number, scale_y:number, codepoint:integer)
+---@field stbtt_MakeCodepointBitmapSubpixel fun(info:stbtt.ffi.FontInfo, output:ffi.cdata*, out_w:integer, out_h:integer, out_stride:integer, scale_x:number, scale_y:number, shift_x:number, shift_y:number, codepoint:integer)
+---@field stbtt_MakeCodepointBitmapSubpixelPrefilter fun(info:stbtt.ffi.FontInfo, output:ffi.cdata*, out_w:integer, out_h:integer, out_stride:integer, scale_x:number, scale_y:number, shift_x:number, shift_y:number, oversample_x:integer, oversample_y:integer, sub_x:ffi.cdata*, sub_y:ffi.cdata*, codepoint:integer)
+---@field stbtt_GetCodepointBitmapBox fun(info:stbtt.ffi.FontInfo, codepoint:integer, scale_x:number, scale_y:number, ix0:ffi.cdata*, iy0:ffi.cdata*, ix1:ffi.cdata*, iy1:ffi.cdata*)
+---@field stbtt_GetCodepointBitmapBoxSubpixel fun(info:stbtt.ffi.FontInfo, codepoint:integer, scale_x:number, scale_y:number, shift_x:number, shift_y:number, ix0:ffi.cdata*, iy0:ffi.cdata*, ix1:ffi.cdata*, iy1:ffi.cdata*)
+---@field stbtt_GetGlyphBitmap fun(info:stbtt.ffi.FontInfo, scale_x:number, scale_y:number, glyph:integer, width:ffi.cdata*, height:ffi.cdata*, xoff:ffi.cdata*, yoff:ffi.cdata*): ffi.cdata*
+---@field stbtt_GetGlyphBitmapSubpixel fun(info:stbtt.ffi.FontInfo, scale_x:number, scale_y:number, shift_x:number, shift_y:number, glyph:integer, width:ffi.cdata*, height:ffi.cdata*, xoff:ffi.cdata*, yoff:ffi.cdata*): ffi.cdata*
+---@field stbtt_MakeGlyphBitmap fun(info:stbtt.ffi.FontInfo, output:ffi.cdata*, out_w:integer, out_h:integer, out_stride:integer, scale_x:number, scale_y:number, glyph:integer)
+---@field stbtt_MakeGlyphBitmapSubpixel fun(info:stbtt.ffi.FontInfo, output:ffi.cdata*, out_w:integer, out_h:integer, out_stride:integer, scale_x:number, scale_y:number, shift_x:number, shift_y:number, glyph:integer)
+---@field stbtt_MakeGlyphBitmapSubpixelPrefilter fun(info:stbtt.ffi.FontInfo, output:ffi.cdata*, out_w:integer, out_h:integer, out_stride:integer, scale_x:number, scale_y:number, shift_x:number, shift_y:number, oversample_x:integer, oversample_y:integer, sub_x:ffi.cdata*, sub_y:ffi.cdata*, glyph:integer)
+---@field stbtt_GetGlyphBitmapBox fun(info:stbtt.ffi.FontInfo, glyph:integer, scale_x:number, scale_y:number, ix0:ffi.cdata*, iy0:ffi.cdata*, ix1:ffi.cdata*, iy1:ffi.cdata*)
+---@field stbtt_GetGlyphBitmapBoxSubpixel fun(info:stbtt.ffi.FontInfo, glyph:integer, scale_x:number, scale_y:number, shift_x:number, shift_y:number, ix0:ffi.cdata*, iy0:ffi.cdata*, ix1:ffi.cdata*, iy1:ffi.cdata*)
+---@field stbtt_Rasterize fun(result:stbtt.ffi.Bitmap, flatness_in_pixels:number, vertices:stbtt.ffi.Vertex, num_verts:integer, scale_x:number, scale_y:number, shift_x:number, shift_y:number, x_off:integer, y_off:integer, invert:integer, userdata:ffi.cdata*)
 ---@field stbtt_FreeSDF fun(bitmap:ffi.cdata*, userdata:ffi.cdata*)
----@field stbtt_GetGlyphSDF fun(info:ffi.cdata*, scale:number, glyph:integer, padding:integer, onedge_value:integer, pixel_dist_scale:number, width:ffi.cdata*, height:ffi.cdata*, xoff:ffi.cdata*, yoff:ffi.cdata*): ffi.cdata*
----@field stbtt_GetCodepointSDF fun(info:ffi.cdata*, scale:number, codepoint:integer, padding:integer, onedge_value:integer, pixel_dist_scale:number, width:ffi.cdata*, height:ffi.cdata*, xoff:ffi.cdata*, yoff:ffi.cdata*): ffi.cdata*
+---@field stbtt_GetGlyphSDF fun(info:stbtt.ffi.FontInfo, scale:number, glyph:integer, padding:integer, onedge_value:integer, pixel_dist_scale:number, width:ffi.cdata*, height:ffi.cdata*, xoff:ffi.cdata*, yoff:ffi.cdata*): ffi.cdata*
+---@field stbtt_GetCodepointSDF fun(info:stbtt.ffi.FontInfo, scale:number, codepoint:integer, padding:integer, onedge_value:integer, pixel_dist_scale:number, width:ffi.cdata*, height:ffi.cdata*, xoff:ffi.cdata*, yoff:ffi.cdata*): ffi.cdata*
 ---@field stbtt_FindMatchingFont fun(fontdata:ffi.cdata*, name:ffi.cdata*, flags:integer): integer
 ---@field stbtt_CompareUTF8toUTF16_bigendian fun(s1:ffi.cdata*, len1:integer, s2:ffi.cdata*, len2:integer): integer
----@field stbtt_GetFontNameString fun(font:ffi.cdata*, length:ffi.cdata*, platformID:integer, encodingID:integer, languageID:integer, nameID:integer): ffi.cdata*
+---@field stbtt_GetFontNameString fun(font:stbtt.ffi.FontInfo, length:ffi.cdata*, platformID:integer, encodingID:integer, languageID:integer, nameID:integer): ffi.cdata*
 local C            = ffi.load(here .. libName)
 
 local stbtt        = {}
@@ -261,6 +261,7 @@ local stbtt        = {}
 ---@class stbtt.ffi.Vertex: ffi.cdata*
 ---@class stbtt.ffi.KerningEntry: ffi.cdata*
 ---@class stbtt.ffi.PackRange: ffi.cdata*
+---@class stbtt.ffi.Bitmap: ffi.cdata*
 ---@class stbtt.ffi.Rect: ffi.cdata*
 
 ---@type fun(): stbtt.ffi.FontInfo
