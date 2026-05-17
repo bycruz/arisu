@@ -1,5 +1,6 @@
 local ffi = require("ffi")
 local Image = require("arisu-image")
+local QOI = require("arisu-image.formats.qoi")
 
 local Compute = require("arisu.tools.compute")
 
@@ -15,6 +16,11 @@ local UIPlugin = require("arisu-app.plugin.ui")
 
 local OverlayPlugin = require("arisu.plugin.overlay")
 
+local fs = require("fs")
+local path = require("path")
+
+local VISIBLE_ENTRIES = 6
+
 ---@alias Message
 --- | { type: "onWindowCreate", window: winit.Window }
 --- | { type: "ToolClicked", tool: App.Tool }
@@ -24,6 +30,18 @@ local OverlayPlugin = require("arisu.plugin.overlay")
 --- | { type: "OpenPopupClosed" }
 --- | { type: "FilePathChanged", value: string }
 --- | { type: "FilePathSubmit", value: string }
+--- | { type: "SavePopupClosed" }
+--- | { type: "SaveFilePathChanged", value: string }
+--- | { type: "FilePickerNavigate", value: string }
+--- | { type: "SavePickerNavigate", value: string }
+--- | { type: "FileEntryClicked", value: string }
+--- | { type: "SaveEntryClicked", value: string }
+--- | { type: "FilePickerDirSubmit", value: string }
+--- | { type: "SavePickerDirSubmit", value: string }
+--- | { type: "FilePickerScrollUp" }
+--- | { type: "FilePickerScrollDown" }
+--- | { type: "SavePickerScrollUp" }
+--- | { type: "SavePickerScrollDown" }
 --- | { type: "StartDrawing", x: number, y: number, elementWidth: number, elementHeight: number }
 --- | { type: "StopDrawing", x: number, y: number, elementWidth: number, elementHeight: number }
 --- | { type: "Hovered", x: number, y: number, elementWidth: number, elementHeight: number }
@@ -98,6 +116,14 @@ local OverlayPlugin = require("arisu.plugin.overlay")
 ---@field brushSize number
 ---@field canvasWidthInput string
 ---@field canvasHeightInput string
+---@field filePickerPath string
+---@field saveFilePath string
+---@field filePickerDir string
+---@field filePickerEntries { name: string, type: string }[]
+---@field filePickerScroll number
+---@field savePickerDir string
+---@field savePickerEntries { name: string, type: string }[]
+---@field savePickerScroll number
 local App = {}
 App.__index = App
 
@@ -123,6 +149,13 @@ function App.new()
 	self.overlayCurve = nil
 	self.overlayText = nil
 	self.filePickerPath = ""
+	self.saveFilePath = ""
+	self.filePickerDir = "."
+	self.filePickerEntries = {}
+	self.filePickerScroll = 0
+	self.savePickerDir = "."
+	self.savePickerEntries = {}
+	self.savePickerScroll = 0
 	self.brushesOpen = false
 	self.ribbonOpen = true
 	self.brushSize = 10
@@ -176,6 +209,42 @@ function App:makeResources() ---@return App.Resources
 	}
 end
 
+---@param dir string
+---@return { name: string, type: string }[]
+function App:listDir(dir)
+	local entries = {}
+	local iter = fs.readdir(dir)
+	if not iter then return entries end
+
+	for entry in iter do
+		entries[#entries + 1] = { name = entry.name, type = entry.type }
+	end
+
+	-- Sort: directories first, then files, alphabetically
+	table.sort(entries, function(a, b)
+		local aDir = a.type == "dir"
+		local bDir = b.type == "dir"
+		if aDir ~= bDir then return aDir end
+		return a.name:lower() < b.name:lower()
+	end)
+
+	return entries
+end
+
+---@param p string
+---@return string
+local function expandHome(p)
+	if p:sub(1, 1) == "~" then
+		local home = os.getenv("HOME") or "/"
+		if p == "~" then
+			return home
+		else
+			return home .. p:sub(2)
+		end
+	end
+	return p
+end
+
 ---@generic T, V
 ---@param list T[]
 ---@param fn fun(item: T): V
@@ -189,20 +258,49 @@ local function map(list, fn)
 end
 
 ---@param window winit.Window
-function App:filePickerView(window)
+---@param mode "open" | "save"
+function App:filePickerView(window, mode)
 	local borderColor = { r = 0.8, g = 0.8, b = 0.8, a = 1 }
 	local focusedId = self.plugins.layout:getFocusedId(window)
 	local cursorPos = self.plugins.layout:getCursorPos(window)
 
-	local displayValue = self.filePickerPath
-	if focusedId == "filePath" then
+	local isOpen = mode == "open"
+	local pathKey = isOpen and "filePickerPath" or "saveFilePath"
+	local dirKey = isOpen and "filePickerDir" or "savePickerDir"
+	local entriesKey = isOpen and "filePickerEntries" or "savePickerEntries"
+	local inputId = isOpen and "filePath" or "saveFilePath"
+	local changeMsg = isOpen and "FilePathChanged" or "SaveFilePathChanged"
+	local submitMsg = "FilePathSubmit"
+	local closeMsg = isOpen and "OpenPopupClosed" or "SavePopupClosed"
+	local navMsg = isOpen and "FilePickerNavigate" or "SavePickerNavigate"
+	local fileClickMsg = isOpen and "FileEntryClicked" or "SaveEntryClicked"
+	local dirInputId = isOpen and "openDirPath" or "saveDirPath"
+	local dirSubmitMsg = isOpen and "FilePickerDirSubmit" or "SavePickerDirSubmit"
+	local scrollKey = isOpen and "filePickerScroll" or "savePickerScroll"
+	local scrollUpMsg = isOpen and "FilePickerScrollUp" or "SavePickerScrollUp"
+	local scrollDownMsg = isOpen and "FilePickerScrollDown" or "SavePickerScrollDown"
+	local scrollOffset = self[scrollKey]
+
+	local currentPath = self[pathKey]
+	local currentDir = self[dirKey]
+	local entries = self[entriesKey]
+
+	local displayValue = currentPath
+	if focusedId == inputId then
 		displayValue = displayValue:sub(1, cursorPos) .. "|" .. displayValue:sub(cursorPos + 1)
 	else
 		displayValue = #displayValue > 0 and displayValue or " "
 	end
 
+	local dirDisplay = currentDir
+	if focusedId == dirInputId then
+		dirDisplay = dirDisplay:sub(1, cursorPos) .. "|" .. dirDisplay:sub(cursorPos + 1)
+	else
+		dirDisplay = #dirDisplay > 0 and dirDisplay or " "
+	end
+
 	local focusBorderColor = { r = 0.3, g = 0.5, b = 1, a = 1 }
-	local inputBorder = focusedId == "filePath" and {
+	local inputBorder = focusedId == inputId and {
 		top    = { width = 2, color = focusBorderColor },
 		bottom = { width = 2, color = focusBorderColor },
 		left   = { width = 2, color = focusBorderColor },
@@ -214,56 +312,259 @@ function App:filePickerView(window)
 		right  = { width = 1, color = borderColor }
 	}
 
+	local dirInputBorder = focusedId == dirInputId and {
+		top    = { width = 2, color = focusBorderColor },
+		bottom = { width = 2, color = focusBorderColor },
+		left   = { width = 2, color = focusBorderColor },
+		right  = { width = 2, color = focusBorderColor }
+	} or {
+		top    = { width = 1, color = borderColor },
+		bottom = { width = 1, color = borderColor },
+		left   = { width = 1, color = borderColor },
+		right  = { width = 1, color = borderColor }
+	}
+
+	-- Build file tree (scrollable)
+	local fileListChildren = {}
+	local totalEntries = #entries
+	local canScrollUp = scrollOffset > 0
+	local canScrollDown = scrollOffset + VISIBLE_ENTRIES < totalEntries
+
+	-- Scroll up button (always shown, grayed out when at top)
+	local upBg = canScrollUp and { r = 0.85, g = 0.88, b = 0.92, a = 1.0 } or { r = 0.92, g = 0.92, b = 0.95, a = 1.0 }
+	local upFg = canScrollUp and { r = 0.2, g = 0.2, b = 0.2, a = 1 } or { r = 0.7, g = 0.7, b = 0.7, a = 1 }
+	fileListChildren[#fileListChildren + 1] = Element.new("div")
+		:withStyle({
+			height = { abs = 16 },
+			direction = "row",
+			align = "center",
+			justify = "center",
+			bg = upBg
+		})
+		:onClick({ type = scrollUpMsg })
+		:withChildren({ Element.from("^"):withStyle({ height = { abs = 12 }, fg = upFg }) })
+
+	-- Parent directory ".."
+	local parentDir = path.dirname(currentDir)
+	if parentDir ~= currentDir then
+		fileListChildren[#fileListChildren + 1] = Element.new("div")
+			:withStyle({
+				height = { abs = 22 },
+				direction = "row",
+				align = "center",
+				padding = { left = 8 },
+				bg = { r = 0.95, g = 0.95, b = 0.95, a = 1.0 }
+			})
+			:onClick({ type = navMsg, value = parentDir })
+			:withChildren({ Element.from(".. (parent)"):withStyle({ height = { abs = 14 } }) })
+	end
+
+	-- Visible entries (scroll window)
+	local endIdx = math.min(scrollOffset + VISIBLE_ENTRIES, totalEntries)
+	local shownCount = 0
+	for i = scrollOffset + 1, endIdx do
+		local entry = entries[i]
+
+		local fullPath = path.join(currentDir, entry.name)
+		local isDir = entry.type == "dir"
+		local label = isDir and (entry.name .. "/") or entry.name
+
+		local row
+		if isDir then
+			row = Element.new("div")
+				:withStyle({
+					height = { abs = 22 },
+					direction = "row",
+					align = "center",
+					padding = { left = 8 },
+					bg = { r = 0.95, g = 0.95, b = 0.95, a = 1.0 }
+				})
+				:onClick({ type = navMsg, value = fullPath })
+		else
+			local isSelected = currentPath == fullPath
+			row = Element.new("div")
+				:withStyle({
+					height = { abs = 22 },
+					direction = "row",
+					align = "center",
+					padding = { left = 8 },
+					bg = isSelected and { r = 0.7, g = 0.8, b = 1, a = 1.0 } or { r = 1, g = 1, b = 1, a = 1.0 }
+				})
+				:onClick({ type = fileClickMsg, value = fullPath })
+		end
+
+		row:withChildren({ Element.from(label):withStyle({ height = { abs = 14 } }) })
+		fileListChildren[#fileListChildren + 1] = row
+		shownCount = shownCount + 1
+	end
+
+	-- Scroll down button (always shown, grayed out when at bottom)
+	local downBg = canScrollDown and { r = 0.85, g = 0.88, b = 0.92, a = 1.0 } or
+		{ r = 0.92, g = 0.92, b = 0.95, a = 1.0 }
+	local downFg = canScrollDown and { r = 0.2, g = 0.2, b = 0.2, a = 1 } or { r = 0.7, g = 0.7, b = 0.7, a = 1 }
+	fileListChildren[#fileListChildren + 1] = Element.new("div")
+		:withStyle({
+			height = { abs = 16 },
+			direction = "row",
+			align = "center",
+			justify = "center",
+			bg = downBg
+		})
+		:onClick({ type = scrollDownMsg })
+		:withChildren({ Element.from("v"):withStyle({ height = { abs = 12 }, fg = downFg }) })
+
+	-- Total count label
+	if totalEntries > 0 then
+		local showingTo = math.min(scrollOffset + VISIBLE_ENTRIES, totalEntries)
+		fileListChildren[#fileListChildren + 1] = Element.new("div")
+			:withStyle({ height = { abs = 14 }, align = "center", justify = "center" })
+			:withChildren({ Element.from(" " .. (scrollOffset + 1) .. "-" .. showingTo .. " of " .. totalEntries)
+				:withStyle({ height = { abs = 11 } }) })
+	end
+
+	local title = isOpen and "Open File" or "Save As"
+	local actionBtnLabel = isOpen and "Open" or "Save"
+
 	return Element.new("div")
 		:withStyle({ direction = "column", bg = { r = 0.95, g = 0.95, b = 0.95, a = 1.0 } })
 		:withChildren({
+			-- Title bar
 			Element.new("div")
 				:withStyle({
-					height = { abs = 30 },
+					height = { abs = 28 },
 					direction = "row",
 					align = "center",
 					padding = { left = 5 },
 					border = { bottom = { width = 1, color = borderColor } }
 				})
-				:withChildren({ Element.from("Open File") }),
+				:withChildren({ Element.from(title) }),
+			-- Directory path bar with home button
 			Element.new("div")
-				:withStyle({ height = "auto", padding = { all = 10 }, direction = "column", gap = 6 })
+				:withStyle({
+					height = { abs = 24 },
+					direction = "row",
+					align = "center",
+					padding = { left = 4, right = 4 },
+					bg = { r = 0.9, g = 0.9, b = 0.95, a = 1.0 },
+					border = { bottom = { width = 1, color = borderColor } },
+					gap = 4
+				})
 				:withChildren({
-					Element.from("File path:"):withStyle({ height = { abs = 14 } }),
+					-- Home button (~)
 					Element.new("div")
 						:withStyle({
-							height = { abs = 26 },
+							width = { abs = 20 },
+							height = { abs = 20 },
+							align = "center",
+							justify = "center",
+							bg = { r = 0.8, g = 0.85, b = 0.95, a = 1.0 },
+							border = {
+								top = { width = 1, color = borderColor },
+								bottom = { width = 1, color = borderColor },
+								left = { width = 1, color = borderColor },
+								right = { width = 1, color = borderColor }
+							}
+						})
+						:onClick({ type = navMsg, value = expandHome("~") })
+						:withChildren({ Element.from("~") }),
+					-- Editable directory path
+					Element.new("div")
+						:withStyle({
+							height = { abs = 20 },
+							direction = "row",
+							bg = { r = 1, g = 1, b = 1, a = 1 },
+							border = dirInputBorder,
+							padding = { left = 3 },
+							align = "center",
+							width = { rel = 1.0 }
+						})
+						:asTextInput({
+							id = dirInputId,
+							value = currentDir,
+							onsubmit = function(v) return { type = dirSubmitMsg, value = v } end
+						})
+						:withChildren({
+							Element.from(dirDisplay):withStyle({ height = { abs = 13 } })
+						})
+				}),
+			-- File list
+			Element.new("div")
+				:withStyle({
+					height = "auto",
+					direction = "column",
+					bg = { r = 1, g = 1, b = 1, a = 1 },
+					border = { bottom = { width = 1, color = borderColor } }
+				})
+				:withChildren(fileListChildren),
+			-- Bottom: path input + buttons (fixed height so file list gets remaining space)
+			Element.new("div")
+				:withStyle({
+					height = { abs = 68 },
+					padding = { left = 6, right = 6, top = 6, bottom = 6 },
+					direction = "column",
+					gap = 4
+				})
+				:withChildren({
+					-- Path input
+					Element.new("div")
+						:withStyle({
+							height = { abs = 24 },
+							direction = "row",
 							bg = { r = 1, g = 1, b = 1, a = 1 },
 							border = inputBorder,
 							padding = { left = 4 },
 							align = "center"
 						})
 						:asTextInput({
-							id = "filePath",
-							value = self.filePickerPath,
-							oninput = function(v) return { type = "FilePathChanged", value = v } end,
-							onsubmit = function(v) return { type = "FilePathSubmit", value = v } end
+							id = inputId,
+							value = currentPath,
+							oninput = function(v) return { type = changeMsg, value = v } end,
+							onsubmit = function(v) return { type = submitMsg, value = v } end
 						})
 						:withChildren({
-							Element.from(displayValue):withStyle({ height = { abs = 14 } })
+							Element.from(displayValue):withStyle({ height = { abs = 13 } })
+						}),
+					-- Buttons
+					Element.new("div")
+						:withStyle({
+							height = { abs = 28 },
+							direction = "row",
+							align = "center",
+							justify = "end",
+							gap = 8
 						})
-				}),
-			Element.new("div")
-				:withStyle({
-					height = { abs = 40 },
-					direction = "row",
-					align = "center",
-					justify = "center",
-					gap = 10,
-					border = { top = { width = 1, color = borderColor } }
-				})
-				:withChildren({
-					Element.from("Cancel")
-						:withStyle({ width = { abs = 80 }, align = "center" })
-						:onClick({ type = "OpenPopupClosed" }),
-					Element.from("Open")
-						:withStyle({ width = { abs = 80 }, align = "center" })
-						:onClick({ type = "FilePathSubmit", value = self.filePickerPath })
+						:withChildren({
+							Element.from("Cancel")
+								:withStyle({
+									width = { abs = 70 },
+									height = { abs = 24 },
+									align = "center",
+									justify = "center",
+									bg = { r = 0.9, g = 0.9, b = 0.9, a = 1 },
+									border = {
+										top = { width = 1, color = borderColor },
+										bottom = { width = 1, color = borderColor },
+										left = { width = 1, color = borderColor },
+										right = { width = 1, color = borderColor }
+									}
+								})
+								:onClick({ type = closeMsg }),
+							Element.from(actionBtnLabel)
+								:withStyle({
+									width = { abs = 70 },
+									height = { abs = 24 },
+									align = "center",
+									justify = "center",
+									bg = { r = 0.3, g = 0.5, b = 1, a = 1 },
+									border = {
+										top = { width = 1, color = { r = 0.2, g = 0.4, b = 0.9, a = 1 } },
+										bottom = { width = 1, color = { r = 0.2, g = 0.4, b = 0.9, a = 1 } },
+										left = { width = 1, color = { r = 0.2, g = 0.4, b = 0.9, a = 1 } },
+										right = { width = 1, color = { r = 0.2, g = 0.4, b = 0.9, a = 1 } }
+									}
+								})
+								:onClick({ type = submitMsg, value = currentPath })
+						})
 				})
 		})
 end
@@ -391,8 +692,11 @@ function App:view(window)
 	if window.kind == "Canvas Size" then
 		return self:canvasSizePickerView(window)
 	end
-	if window.kind then
-		return self:filePickerView(window)
+	if window.kind == "Open File" then
+		return self:filePickerView(window, "open")
+	end
+	if window.kind == "Save File" then
+		return self:filePickerView(window, "save")
 	end
 
 	local disabledColor = { r = 0.7, g = 0.7, b = 0.7, a = 1.0 }
@@ -1233,16 +1537,16 @@ function App:view(window)
 							height = { rel = 0.3 }
 						})
 					}),
-					Element.new("div")
-						:withStyle({
-							width = { abs = 24 },
-							height = { rel = 1.0 },
-							align = "center",
-							justify = "center",
-							border = { left = { width = 1, color = borderColor } }
-						})
-						:withChildren({ Element.from("^") })
-						:onClick({ type = "RibbonToggled" })
+				Element.new("div")
+					:withStyle({
+						width = { abs = 24 },
+						height = { rel = 1.0 },
+						align = "center",
+						justify = "center",
+						border = { left = { width = 1, color = borderColor } }
+					})
+					:withChildren({ Element.from("^") })
+					:onClick({ type = "RibbonToggled" })
 			})
 
 		local ribbonEl = self.ribbonOpen and toolbar or Element.new("div")
@@ -1493,6 +1797,22 @@ function App:event(event, handler)
 		end
 	end
 
+	if event.name == "mouseScroll" then
+		if event.window.kind == "Open File" then
+			local maxScroll = math.max(0, #self.filePickerEntries - VISIBLE_ENTRIES)
+			local step = event.dy > 0 and 3 or -3
+			self.filePickerScroll = math.max(0, math.min(maxScroll, self.filePickerScroll + step))
+			self.plugins.ui:refreshView(event.window)
+			return nil
+		elseif event.window.kind == "Save File" then
+			local maxScroll = math.max(0, #self.savePickerEntries - VISIBLE_ENTRIES)
+			local step = event.dy > 0 and 3 or -3
+			self.savePickerScroll = math.max(0, math.min(maxScroll, self.savePickerScroll + step))
+			self.plugins.ui:refreshView(event.window)
+			return nil
+		end
+	end
+
 	local layoutUpdate = self.plugins.layout:event(event)
 	if layoutUpdate then
 		return layoutUpdate
@@ -1721,6 +2041,10 @@ function App:update(message, window)
 		self.resources.compute = Compute.new(textureManager, canvas, self.plugins.render.device)
 		self.plugins.ui:refreshView(window)
 	elseif message.type == "OpenClicked" then
+		-- Load directory listing when opening the file picker
+		self.filePickerDir = "."
+		self.filePickerEntries = self:listDir(self.filePickerDir)
+		self.filePickerScroll = 0
 		return { type = "createWindow", width = 500, height = 350, kind = "Open File" }
 	elseif message.type == "OpenPopupClosed" then
 		self.filePickerPath = ""
@@ -1728,12 +2052,187 @@ function App:update(message, window)
 	elseif message.type == "FilePathChanged" then
 		self.filePickerPath = message.value
 		self.plugins.ui:refreshView(window)
-	elseif message.type == "FilePathSubmit" then
-		print("Open file: " .. message.value)
+	elseif message.type == "FilePickerNavigate" then
+		self.filePickerDir = message.value
+		self.filePickerEntries = self:listDir(self.filePickerDir)
+		self.filePickerScroll = 0
 		self.filePickerPath = ""
-		return { type = "closeWindow" }
+		self.plugins.ui:refreshView(window)
+	elseif message.type == "FileEntryClicked" then
+		self.filePickerPath = message.value
+		self.plugins.ui:refreshView(window)
+	elseif message.type == "SavePickerNavigate" then
+		self.savePickerDir = message.value
+		self.savePickerEntries = self:listDir(self.savePickerDir)
+		self.savePickerScroll = 0
+		self.saveFilePath = ""
+		self.plugins.ui:refreshView(window)
+	elseif message.type == "SaveEntryClicked" then
+		self.saveFilePath = message.value
+		self.plugins.ui:refreshView(window)
+	elseif message.type == "FilePathSubmit" then
+		if window.kind == "Open File" then
+			local rawPath = message.value
+			if rawPath and #rawPath > 0 then
+				local resolved = expandHome(rawPath)
+				if resolved:sub(1, 1) ~= "/" then
+					resolved = path.join(self.filePickerDir, resolved)
+				end
+				local img, err = Image.fromPath(resolved)
+				if img then
+					local w, h = img.width, img.height
+					if w > 1024 or h > 1024 then
+						print("Image too large (max 1024x1024): " .. w .. "x" .. h)
+					elseif w > 0 and h > 0 then
+						local textureManager = self.plugins.render.sharedResources.textureManager
+						local device = self.plugins.render.device
+
+						-- Convert RGB to RGBA if needed (GPU uses 4 channels)
+						local pixels = img.pixels
+						if img.channels == 3 then
+							local rgbaPixels = ffi.new("uint8_t[?]", w * h * 4)
+							local srcPos = 0
+							local dstPos = 0
+							for _ = 0, w * h - 1 do
+								rgbaPixels[dstPos]     = pixels[srcPos]
+								rgbaPixels[dstPos + 1] = pixels[srcPos + 1]
+								rgbaPixels[dstPos + 2] = pixels[srcPos + 2]
+								rgbaPixels[dstPos + 3] = 255
+								srcPos                 = srcPos + 3
+								dstPos                 = dstPos + 4
+							end
+							pixels = rgbaPixels
+						end
+
+						-- Allocate new canvas and upload pixels
+						local canvas = textureManager:allocate(w, h)
+						device.queue:writeTexture(
+							textureManager.texture,
+							{ layer = canvas, width = w, height = h },
+							pixels
+						)
+
+						-- Update canvas resources
+						self.resources.textures.canvas = canvas
+						self.resources.canvasWidth = w
+						self.resources.canvasHeight = h
+						self.resources.compute = Compute.new(textureManager, canvas, device)
+						self.plugins.overlay:resize(self.plugins.window.mainCtx.window, w, h)
+						self.plugins.ui:refreshView(self.plugins.window.mainCtx.window)
+
+						print("Opened file: " .. resolved .. " (" .. w .. "x" .. h .. ")")
+					end
+				else
+					print("Failed to open file: " .. (err or "unknown error"))
+				end
+			end
+			self.filePickerPath = ""
+			return { type = "closeWindow" }
+		elseif window.kind == "Save File" then
+			local rawPath = message.value
+			if rawPath and #rawPath > 0 then
+				local resolved = expandHome(rawPath)
+				if resolved:sub(1, 1) ~= "/" then
+					resolved = path.join(self.savePickerDir, resolved)
+				end
+				local cw, ch = self.resources.canvasWidth, self.resources.canvasHeight
+				local textureManager = self.plugins.render.sharedResources.textureManager
+				local device = self.plugins.render.device
+
+				-- Read canvas pixels from GPU
+				local bufferSize = cw * ch * 4
+				local readBuffer = device:createBuffer({ size = bufferSize, usages = { "COPY_DST", "MAP_READ" } })
+
+				local encoder = device:createCommandEncoder()
+				encoder:copyTextureToBuffer(
+					{ texture = textureManager.texture, origin = { x = 0, y = 0, z = self.resources.textures.canvas } },
+					{ buffer = readBuffer, bytesPerRow = cw * 4 },
+					{ width = cw, height = ch, depthOrArrayLayers = 1 }
+				)
+				device.queue:submit(encoder:finish())
+				device.queue:waitIdle()
+
+				readBuffer:mapAsync()
+				local pixels = ffi.cast("uint8_t*", readBuffer:getMappedRange())
+
+				-- Encode as QOI and write to file
+				local encoded = QOI.Encode(cw, ch, 4, pixels)
+				readBuffer:unmap()
+				readBuffer:destroy()
+
+				local file, err = io.open(resolved, "wb")
+				if file then
+					file:write(encoded)
+					file:close()
+					print("Saved file: " .. resolved .. " (" .. cw .. "x" .. ch .. ")")
+				else
+					print("Failed to save file: " .. (err or "unknown error"))
+				end
+			end
+			self.saveFilePath = ""
+			return { type = "closeWindow" }
+		end
 	elseif message.type == "SaveClicked" then
-		print("Save clicked - not implemented")
+		self.savePickerDir = "."
+		self.savePickerEntries = self:listDir(self.savePickerDir)
+		self.savePickerScroll = 0
+		return { type = "createWindow", width = 500, height = 350, kind = "Save File" }
+	elseif message.type == "SavePopupClosed" then
+		self.saveFilePath = ""
+		return { type = "closeWindow" }
+	elseif message.type == "SaveFilePathChanged" then
+		self.saveFilePath = message.value
+		self.plugins.ui:refreshView(window)
+	elseif message.type == "FilePickerDirSubmit" then
+		local dir = expandHome(message.value)
+		if fs.isdir(dir) then
+			self.filePickerDir = dir
+			self.filePickerEntries = self:listDir(dir)
+			self.filePickerScroll = 0
+			self.filePickerPath = ""
+			self.plugins.ui:refreshView(window)
+		elseif fs.isfile(dir) then
+			local parent = path.dirname(dir)
+			if fs.isdir(parent) then
+				self.filePickerDir = parent
+				self.filePickerEntries = self:listDir(parent)
+				self.filePickerScroll = 0
+				self.filePickerPath = dir
+				self.plugins.ui:refreshView(window)
+			end
+		end
+	elseif message.type == "SavePickerDirSubmit" then
+		local dir = expandHome(message.value)
+		if fs.isdir(dir) then
+			self.savePickerDir = dir
+			self.savePickerEntries = self:listDir(dir)
+			self.savePickerScroll = 0
+			self.saveFilePath = ""
+			self.plugins.ui:refreshView(window)
+		elseif fs.isfile(dir) then
+			local parent = path.dirname(dir)
+			if fs.isdir(parent) then
+				self.savePickerDir = parent
+				self.savePickerEntries = self:listDir(parent)
+				self.savePickerScroll = 0
+				self.saveFilePath = dir
+				self.plugins.ui:refreshView(window)
+			end
+		end
+	elseif message.type == "FilePickerScrollUp" then
+		self.filePickerScroll = math.max(0, self.filePickerScroll - 1)
+		self.plugins.ui:refreshView(window)
+	elseif message.type == "FilePickerScrollDown" then
+		local maxScroll = math.max(0, #self.filePickerEntries - VISIBLE_ENTRIES)
+		self.filePickerScroll = math.min(maxScroll, self.filePickerScroll + 1)
+		self.plugins.ui:refreshView(window)
+	elseif message.type == "SavePickerScrollUp" then
+		self.savePickerScroll = math.max(0, self.savePickerScroll - 1)
+		self.plugins.ui:refreshView(window)
+	elseif message.type == "SavePickerScrollDown" then
+		local maxScroll = math.max(0, #self.savePickerEntries - VISIBLE_ENTRIES)
+		self.savePickerScroll = math.min(maxScroll, self.savePickerScroll + 1)
+		self.plugins.ui:refreshView(window)
 	elseif message.type == "RibbonToggled" then
 		self.ribbonOpen = not self.ribbonOpen
 		self.plugins.ui:refreshView(window)

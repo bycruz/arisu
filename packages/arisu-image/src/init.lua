@@ -53,6 +53,11 @@ function Image.fromData(content)
 	return nil, "Unsupported image format"
 end
 
+---@return string
+function Image:encode()
+	return QOI.Encode(self.width, self.height, self.channels, self.pixels)
+end
+
 function Image.isValid(content)
 	return PPM.isValid(content) or QOI.isValid(content)
 end
