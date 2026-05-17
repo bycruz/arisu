@@ -16,13 +16,12 @@ function FontManager.new(textureManager)
 	local characters =
 	" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
 
+	local ttfData = require("arisu-app.assets.fonts.JetBrainsMono-Regular")
 	local defaultBitmap = assert(
-		Bitmap.fromData(
-			{ ymargin = 2, xmargin = 4, gridWidth = 18, gridHeight = 18, characters = characters, perRow = 19 },
-			require("arisu-app.assets.fonts.JetBrainsMono")
-		),
-		"Failed to load bitmap font"
+		Bitmap.fromTTF(ttfData, 20, characters),
+		"Failed to bake TTF font atlas"
 	)
+
 	self.defaultFont = self:upload(defaultBitmap)
 
 	return self

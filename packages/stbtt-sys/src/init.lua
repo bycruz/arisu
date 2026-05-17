@@ -255,7 +255,17 @@ local stbtt        = {}
 
 ---@class stbtt.ffi.FontInfo: ffi.cdata*
 ---@class stbtt.ffi.BakedChar: ffi.cdata*
+
 ---@class stbtt.ffi.AlignedQuad: ffi.cdata*
+---@field x0 number
+---@field y0 number
+---@field s0 number
+---@field t0 number
+---@field x1 number
+---@field y1 number
+---@field s1 number
+---@field t1 number
+
 ---@class stbtt.ffi.PackedChar: ffi.cdata*
 ---@class stbtt.ffi.PackContext: ffi.cdata*
 ---@class stbtt.ffi.Vertex: ffi.cdata*

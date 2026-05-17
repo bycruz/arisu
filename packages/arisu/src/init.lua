@@ -1232,7 +1232,7 @@ function App:view(window)
 							justify = "center",
 							height = { rel = 0.3 }
 						})
-					}),
+						}),
 					Element.new("div")
 						:withStyle({
 							width = { abs = 24 },
@@ -1243,7 +1243,7 @@ function App:view(window)
 						})
 						:withChildren({ Element.from("^") })
 						:onClick({ type = "RibbonToggled" })
-			})
+				})
 
 		local ribbonEl = self.ribbonOpen and toolbar or Element.new("div")
 			:withStyle({
@@ -1391,8 +1391,9 @@ function App:event(event, handler)
 
 				for i = 1, #self.overlayText.value do
 					local char = self.overlayText.value:sub(i, i)
-					if not fontBitmap.config.characters:find(char, 1, true) then
-						penX = penX + fontBitmap.config.gridWidth - (fontBitmap.config.xmargin or 0) * 2
+					if not fontBitmap.characters:find(char, 1, true) then
+						-- Skip characters not in the atlas, just advance by pixelSize * 0.6
+						penX = penX + fontBitmap.pixelSize * 0.6
 					else
 						local quad = fontBitmap:getCharUVs(char)
 						local px0 = math.floor(quad.u0 * imgW + 0.5)
@@ -1410,7 +1411,7 @@ function App:event(event, handler)
 									if imgC >= 4 then mask = imgPixels[fontIdx + 3] end
 									if mask > 127 then
 										local cx2 = penX + dx
-										local cy2 = ty + dy
+										local cy2 = (ty + quad.yOffset) + dy
 										if cx2 >= 0 and cx2 < W and cy2 >= 0 and cy2 < H then
 											local idx = (cy2 * W + cx2) * 4
 											buf[idx] = cr
@@ -1422,7 +1423,7 @@ function App:event(event, handler)
 								end
 							end
 						end
-						penX = penX + pw
+						penX = penX + quad.xAdvance
 					end
 				end
 			end

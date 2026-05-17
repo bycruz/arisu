@@ -2,6 +2,7 @@
 	"name": "arisu-text",
 	"version": "0.1.0",
 	"dependencies": {
-		"arisu-image": { "path": "../arisu-image" }
+		"arisu-image": { "path": "../arisu-image" },
+		"stbtt-sys": { "path": "../stbtt-sys" }
 	}
 }

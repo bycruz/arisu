@@ -307,9 +307,9 @@ function Compute:drawCatmullRom(points, thickness, color)
 			local t2 = t * t
 			local t3 = t2 * t
 			local x = 0.5 *
-			((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3)
+				((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3)
 			local y = 0.5 *
-			((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3)
+				((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3)
 			local cur = { x = x, y = y }
 			if prev then
 				self:drawLine(prev.x, prev.y, cur.x, cur.y, thickness, color)
@@ -455,17 +455,16 @@ function Compute:drawText(x, y, text, fontBitmap, color)
 
 	for i = 1, #text do
 		local char = text:sub(i, i)
-		if not fontBitmap.config.characters:find(char, 1, true) then
-			penX = penX + fontBitmap.config.gridWidth - (fontBitmap.config.xmargin or 0) * 2
+		if not fontBitmap.characters:find(char, 1, true) then
+			-- Skip characters not in the atlas, just advance by pixelSize * 0.6
+			penX = penX + fontBitmap.pixelSize * 0.6
 		else
 			local quad = fontBitmap:getCharUVs(char)
 			local px0 = math.floor(quad.u0 * imgW + 0.5)
 			local py0 = math.floor(quad.v0 * imgH + 0.5)
-			local pw = quad.width
-			local ph = quad.height
 
-			for dy = 0, ph - 1 do
-				for dx = 0, pw - 1 do
+			for dy = 0, quad.height - 1 do
+				for dx = 0, quad.width - 1 do
 					local fx = px0 + dx
 					local fy = py0 + dy
 					if fx >= 0 and fx < imgW and fy >= 0 and fy < imgH then
@@ -474,7 +473,7 @@ function Compute:drawText(x, y, text, fontBitmap, color)
 						if imgC >= 4 then mask = imgPixels[fontIdx + 3] end
 						if mask > 127 then
 							local cx = penX + dx
-							local cy = penY + dy
+							local cy = (penY + quad.yOffset) + dy
 							if cx >= 0 and cx < cw and cy >= 0 and cy < ch then
 								local idx = (cy * cw + cx) * 4
 								pixels[idx] = fr
@@ -486,7 +485,7 @@ function Compute:drawText(x, y, text, fontBitmap, color)
 					end
 				end
 			end
-			penX = penX + pw
+			penX = penX + quad.xAdvance
 		end
 	end
 
