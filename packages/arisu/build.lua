@@ -1,142 +1,72 @@
-local pathSep = string.sub(package.config, 1, 1)
+local build = require("lde-build")
 
----@type string
-local arisuDir = debug.getinfo(1, "S").source:sub(2):match("(.*)" .. pathSep)
+local sep = string.sub(package.config, 1, 1)
 
----@param stage "vert" | "frag" | "comp"
----@param glslPath string
----@param outputPath string
-local function glslToSpirv(stage, glslPath, outputPath)
-	local command = string.format("glslc -fshader-stage=%s %s -o %s", stage, glslPath, outputPath)
+--- hood's opengl backend compiles GLSL itself, so it takes the source text,
+--- while vulkan takes SPIR-V. The runtime picks the module flavor off the same
+--- variable, so a build has to agree with the run.
+local isVulkan = os.getenv("VULKAN") and true or false
 
-	local result = os.execute(command)
-	if result ~= 0 then
-		error("Failed to compile GLSL shader: " .. glslPath)
-	end
-end
+local escapes = {
+	[34] = '\\"',
+	[92] = "\\\\",
+	[9] = "\\t",
+	[10] = "\\n",
+	[13] = "\\r"
+}
 
----@param path string
-local function exists(path)
-	local handle = io.open(path, "r")
-	if handle then
-		handle:close()
-		return true
-	end
-
-	return false
-end
-
-if os.getenv("VULKAN") then
-	local inputVertex = arisuDir .. "/shaders/overlay.vert.glsl"
-	local outputVertex = arisuDir .. "/shaders/overlay.vert.spv"
-	if not exists(outputVertex) then
-		print("SPIR-V vertex shader not found, compiling GLSL to SPIR-V...")
-		glslToSpirv("vert", inputVertex, outputVertex)
-	end
-
-	local inputFragment = arisuDir .. "/shaders/overlay.frag.glsl"
-	local outputFragment = arisuDir .. "/shaders/overlay.frag.spv"
-	if not exists(outputFragment) then
-		print("SPIR-V fragment shader not found, compiling GLSL to SPIR-V...")
-		glslToSpirv("frag", inputFragment, outputFragment)
-	end
-
-	local inputCompute = arisuDir .. "/shaders/brush.compute.glsl"
-	local outputCompute = arisuDir .. "/shaders/brush.compute.spv"
-	if not exists(outputCompute) then
-		print("SPIR-V compute shader not found, compiling GLSL to SPIR-V...")
-		glslToSpirv("comp", inputCompute, outputCompute)
-	end
-end
-
--- Output assets as lua files that can be used with require() in final target folder.
-
-local outputDir = os.getenv("LDE_OUTPUT_DIR")
-
-local function read(path)
-	local handle = io.open(path, "rb")
-	if handle then
-		local r = handle:read("*a")
-		handle:close()
-		return r
-	end
-end
-
-local function write(path, content)
-	local handle = io.open(path, "wb")
-	if handle then
-		handle:write(content)
-		handle:close()
-	end
-end
-
-local function toLuaStringLiteral(data)
-	return (data:gsub(".", function(c)
-		local b = c:byte()
-		if b >= 32 and b <= 126 and c ~= '"' and c ~= "\\" then
-			return c
-		end
-		return string.format("\\x%02x", b)
+--- Escapes quotes, backslashes and control characters so that both GLSL source
+--- and binary SPIR-V survive as a Lua string literal. Numeric escapes are
+--- always three digits wide, otherwise "\10" followed by a literal digit byte
+--- would be read back as a single character.
+---@param data string
+---@return string
+local function toLuaLiteral(data)
+	return (data:gsub("[%z\1-\31\\\"]", function(char)
+		return escapes[char:byte()] or string.format("\\%03d", char:byte())
 	end))
 end
 
-local function mkdirp(path)
-	if not exists(path) then
-		if jit.os == "Windows" then
-			os.execute(string.format('mkdir "%s" >nul 2>nul', path))
-		else
-			os.execute(string.format("mkdir -p %q", path))
-		end
+--- The shader sources live in src/, so lde hands them to this script inside
+--- the output dir. `name` is the source's file base and its dots become
+--- directories: overlay.vert.glsl becomes shaders/overlay/vert/glsl.lua,
+--- required as arisu.shaders.overlay.vert.glsl (or .spv under vulkan).
+---
+--- Both flavors are written under vulkan so the same build also runs on
+--- opengl. SPIR-V is compiled on every build: lde only hashes src/, lde.json
+--- and build.lua, so reusing a previously compiled .spv would ship a stale
+--- shader after an edit, and shaders are tiny anyway.
+---@param name string # base of the .glsl file, e.g. "overlay.vert"
+---@param stage "vert" | "frag" | "comp" # glslc stage; its name for a compute shader is "comp"
+local function embedShader(name, stage)
+	local source = "shaders" .. sep .. name
+	local module = "shaders" .. sep .. (name:gsub("%.", sep))
+	local flavors = { "glsl" }
+
+	if isVulkan then
+		build:sh(string.format('glslc -fshader-stage=%s "%s.glsl" -o "%s.spv"', stage, source, source))
+		flavors[#flavors + 1] = "spv"
+	end
+
+	for _, flavor in ipairs(flavors) do
+		local content = build:read(source .. "." .. flavor)
+		build:write(module .. sep .. flavor .. ".lua", 'return "' .. toLuaLiteral(content) .. '"')
+	end
+
+	-- The compiled SPIR-V is an intermediate: only the module above ships.
+	if isVulkan then
+		build:delete(source .. ".spv")
 	end
 end
 
--- Shaders (flat)
-local shaderSrcDir = arisuDir .. "/shaders"
-local shaderOutDir = outputDir .. "/shaders"
-mkdirp(shaderOutDir)
+embedShader("overlay.vert", "vert")
+embedShader("overlay.frag", "frag")
+embedShader("brush.compute", "comp")
 
-local shaderListCmd
-if jit.os == "Windows" then
-	shaderListCmd = string.format('dir /b "%s"', shaderSrcDir)
-else
-	shaderListCmd = string.format("ls %q", shaderSrcDir)
-end
-
-local shaderHandle = io.popen(shaderListCmd)
-if shaderHandle then
-	for filename in shaderHandle:lines() do
-		local content = read(shaderSrcDir .. "/" .. filename)
-		if content then
-			local outRelPath = filename:gsub("%.", pathSep)
-			local outPath = shaderOutDir .. pathSep .. outRelPath .. ".lua"
-			mkdirp(outPath:match("(.*)" .. pathSep))
-			write(outPath, string.format('return "%s"\n', toLuaStringLiteral(content)))
-		end
-	end
-	shaderHandle:close()
-end
-
--- Assets (recursive)
-local assetsSrcDir = arisuDir .. "/assets"
-local assetsListCmd
-if jit.os == "Windows" then
-	assetsListCmd = string.format('dir /s /b "%s"', assetsSrcDir)
-else
-	assetsListCmd = string.format("find %q -type f", assetsSrcDir)
-end
-
-local assetsHandle = io.popen(assetsListCmd)
-if assetsHandle then
-	for srcPath in assetsHandle:lines() do
-		local relPath = srcPath:sub(#arisuDir + 2)
-		local relPathNoExt = relPath:match("(.+)%.[^%.]+$") or relPath
-		local outPath = outputDir .. pathSep .. relPathNoExt .. ".lua"
-		mkdirp(outPath:match("(.*)" .. pathSep))
-
-		local content = read(srcPath)
-		if content and not exists(outPath) then
-			write(outPath, string.format('return "%s"\n', toLuaStringLiteral(content)))
-		end
-	end
-	assetsHandle:close()
+--- The assets are raw data (qoi, wav), so each one becomes the module of the
+--- same path with its extension swapped: icons/brush.qoi turns into
+--- icons/brush.lua, required as arisu.assets.icons.brush.
+for _, file in ipairs(build:scan("assets")) do
+	local content = build:read(file)
+	build:write((file:gsub("%.[^%.]+$", "")) .. ".lua", 'return "' .. toLuaLiteral(content) .. '"')
 end

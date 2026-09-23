@@ -13,39 +13,40 @@
 			"path": "../arisu-text"
 		},
 		"fs": {
-			"commit": "f519d3bb12365715e1b07a4db132b96d95e30e3f",
-			"git": "https://github.com/lde-org/fs"
+			"commit": "7babb8f41184dc80834fbf55a5528f39d6df111e",
+			"git": "https://github.com/lde-org/fs.git"
 		},
 		"glapi": {
-			"commit": "7c3512859b13eeae7a01f1a39c8dc9a1318d3929",
-			"git": "https://github.com/bycruz/glapi"
+			"commit": "5a0a19b36de30f6d3200dcd7c13b32cbcb19497f",
+			"git": "https://github.com/bycruz/glapi.git"
 		},
 		"hood": {
-			"commit": "f7d56218cd02895f4f3d019b9a253b645b234289",
-			"git": "https://github.com/bycruz/hood"
+			"commit": "6622c4a119ac92e23c2de8eeec82c27095787aa4",
+			"git": "https://github.com/bycruz/hood.git"
 		},
 		"path": {
-			"commit": "5beb4f67e09a943c8733a1625fb34f2de94a65df",
+			"commit": "72c972d5818a2b496666e00103f4d1b582c728fa",
 			"git": "https://github.com/lde-org/path"
 		},
 		"vkapi": {
-			"commit": "a8ab76df250a6b1b37dbca759b20f40fea0bb2c0",
-			"git": "https://github.com/bycruz/vkapi"
+			"commit": "0b126912fa5ca091c940e575ecde295a3bb78429",
+			"git": "https://github.com/bycruz/vkapi.git"
 		},
 		"winapi": {
-			"commit": "893461f3cbf0fd9a0bcd3cf19a8873ceae3c7831",
-			"git": "https://github.com/bycruz/winapi",
+			"commit": "c61a8ddf0d183e00188878d94260c184a61de9c1",
+			"git": "https://github.com/bycruz/winapi.git",
 			"optional": true
 		},
 		"winit": {
-			"commit": "d43f278a2512fdd33858608f5efe5f6df2ae1abd",
-			"git": "https://github.com/bycruz/winit"
+			"commit": "6ce1cd53c4b511f07e7c78cd2639d0107dfed56e",
+			"git": "https://github.com/bycruz/winit.git"
 		},
 		"x11api": {
-			"commit": "af529c46d5563049040d692c004d842bb1b4e7a1",
-			"git": "https://github.com/bycruz/x11api",
+			"commit": "88b328ce3564ed1f84210c44d0952f7d7ac0cb29",
+			"git": "https://github.com/bycruz/x11api.git",
 			"optional": true
 		}
 	},
+	"manifestHash": "049d2e6f4e275c8e",
 	"version": "1"
 }

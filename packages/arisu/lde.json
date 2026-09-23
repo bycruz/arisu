@@ -2,17 +2,9 @@
 	"name": "arisu",
 	"version": "0.1.0",
 	"dependencies": {
-		"arisu-app": {
-			"path": "../arisu-app"
-		},
-		"arisu-image": {
-			"path": "../arisu-image"
-		},
-		"winit": {
-			"git": "https://github.com/bycruz/winit"
-		},
-		"fs": {
-			"git": "https://github.com/lde-org/fs"
-		}
+		"arisu-app": { "path": "../arisu-app" },
+		"arisu-image": { "path": "../arisu-image" },
+		"winit": { "version": "0.1.0" },
+		"fs": { "version": "0.2.0" }
 	}
 }

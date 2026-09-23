@@ -73,7 +73,7 @@ function RenderPlugin:register(window)
 	local ctx = self.windowPlugin:getContext(window)
 	assert(ctx, "Window context not found for render plugin")
 
-	local swapchain = ctx.surface:configure(self.device, { presentMode = "fifo" })
+	local swapchain = ctx.surface:configure(self.device, { presentMode = "immediate" })
 
 	local vertexDescriptor = VertexLayout
 		.new()
@@ -227,7 +227,7 @@ function RenderPlugin:draw(ctx)
 	if not texture then
 		local windowCtx = assert(self.windowPlugin:getContext(ctx.window))
 		local ctx = self:getContext(ctx.window)
-		ctx.swapchain = windowCtx.surface:configure(self.device, { presentMode = "fifo" }, ctx.swapchain)
+		ctx.swapchain = windowCtx.surface:configure(self.device, { presentMode = "immediate" }, ctx.swapchain)
 
 		ctx.depthBufferView:destroy()
 		ctx.depthBuffer:destroy()

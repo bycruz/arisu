@@ -4,7 +4,7 @@
 	"dependencies": {
 		"arisu-layout": { "path": "../arisu-layout" },
 		"arisu-text": { "path": "../arisu-text" },
-		"winit": { "git": "https://github.com/bycruz/winit" },
-		"hood": { "git": "https://github.com/bycruz/hood" }
+		"winit": { "version": "0.1.0" },
+		"hood": { "version": "0.1.1" }
 	}
 }

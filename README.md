@@ -24,8 +24,8 @@ There are no dependencies used by the library. Pure X11/Win32 and OpenGL.
 
 ## Showcase
 
-![v4](./packages/arisu/assets/showcase/v0.4.0.png)
-![v1](./packages/arisu/assets/showcase/v0.1.0.png)
+![v4](./docs/showcase/v0.4.0.png)
+![v1](./docs/showcase/v0.1.0.png)
 
 ## Running
 
