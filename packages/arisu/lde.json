@@ -2,9 +2,20 @@
 	"name": "arisu",
 	"version": "0.1.0",
 	"dependencies": {
-		"arisu-app": { "path": "../arisu-app" },
-		"arisu-image": { "path": "../arisu-image" },
-		"winit": { "version": "0.1.0" },
-		"fs": { "version": "0.2.0" }
+		"arisu-app": {
+			"path": "../arisu-app"
+		},
+		"arisu-image": {
+			"path": "../arisu-image"
+		},
+		"winit": {
+			"version": "0.1.0"
+		},
+		"fs": {
+			"version": "0.2.0"
+		},
+		"treble": {
+			"version": "^0.1.1"
+		}
 	}
 }

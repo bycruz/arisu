@@ -15,6 +15,7 @@ local TextPlugin = require("arisu-app.plugin.text")
 local UIPlugin = require("arisu-app.plugin.ui")
 
 local OverlayPlugin = require("arisu.plugin.overlay")
+local SoundManager = require("arisu.util.sound_manager")
 
 local fs = require("fs")
 local path = require("path")
@@ -48,6 +49,7 @@ local VISIBLE_ENTRIES = 6
 --- | { type: "ColorClicked", r: number, g: number, b: number }
 --- | { type: "CompleteCurve" }
 --- | { type: "BrushesToggled" }
+--- | { type: "SoundToggled" }
 --- | { type: "BrushSizeSelected", size: number }
 --- | { type: "CanvasSizeClicked" }
 --- | { type: "CanvasSizePopupClosed" }
@@ -107,6 +109,7 @@ local VISIBLE_ENTRIES = 6
 ---@class App
 ---@field plugins App.Plugins
 ---@field resources App.Resources
+---@field sounds SoundManager
 ---@field isDrawing boolean
 ---@field currentColor { r: number, g: number, b: number, a: number }
 ---@field currentAction App.Action
@@ -137,6 +140,8 @@ function App.new()
 	end, self.plugins.text)
 	self.plugins.ui = UIPlugin.new(self.plugins.layout, self.plugins.render)
 	self.plugins.overlay = OverlayPlugin.new(self.plugins.render)
+
+	self.sounds = SoundManager.new()
 
 	self.isDrawing = false
 	self.currentColor = { r = 0, g = 0, b = 0, a = 1 }
@@ -792,6 +797,8 @@ function App:view(window)
 
 	local canvasSizeLabel = self.resources.canvasWidth .. " x " .. self.resources.canvasHeight
 
+	local soundIcon = self.sounds.isMuted and self.resources.icons.soundMute or self.resources.icons.sound
+
 	local statusBar = Element.new("div")
 		:withStyle({
 			height = { abs = 30 },
@@ -810,10 +817,19 @@ function App:view(window)
 			Element.from(canvasSizeLabel)
 				:withStyle({
 					width = { abs = 120 },
-					align = "center",
-					padding = { right = 10 }
+					align = "center"
 				})
-				:onClick({ type = "CanvasSizeClicked" })
+				:onClick({ type = "CanvasSizeClicked" }),
+			-- Muted and unmuted are the same button, so turning sound back on
+			-- confirms itself with the click it just allowed.
+			Element.new("div")
+				:withStyle({
+					width = { abs = 16 },
+					height = { abs = 16 },
+					bgImage = soundIcon,
+					margin = { right = 10 }
+				})
+				:onClick({ type = "SoundToggled" })
 		})
 
 	local function makeCanvasArea(heightStyle, widthStyle)
@@ -1580,6 +1596,8 @@ function App:event(event, handler)
 	handler:setMode("poll")
 
 	if event.name == "aboutToWait" then
+		self.sounds:update()
+
 		for window in pairs(self.plugins.window.contexts) do
 			handler:requestRedraw(window)
 		end
@@ -1777,6 +1795,7 @@ function App:event(event, handler)
 						fontBitmap,
 						self.currentColor
 					)
+					self.sounds:play("twang")
 					self.plugins.ui:refreshView(event.window)
 				end
 				self.overlayText = nil
@@ -1845,6 +1864,7 @@ function App:update(message, window)
 				(message.y / message.elementHeight) * ch,
 				self.currentColor
 			)
+			self.sounds:play("twang")
 			self.plugins.ui:refreshView(window)
 		elseif self.currentAction.tool == "brush" then
 			self.resources.compute:stamp(
@@ -1929,6 +1949,7 @@ function App:update(message, window)
 			local start = self.overlayLine.start
 			if start.x ~= x or start.y ~= y then
 				self.resources.compute:drawLine(start.x, start.y, x, y, 2, self.currentColor)
+				self.sounds:play("twang")
 				self.plugins.ui:refreshView(window)
 			end
 			self.overlayLine = nil
@@ -1939,6 +1960,7 @@ function App:update(message, window)
 			local start = self.overlayRectangle.start
 			if start.x ~= x or start.y ~= y then
 				self.resources.compute:drawRectangle(start.x, start.y, x, y, 2, self.currentColor)
+				self.sounds:play("twang")
 				self.plugins.ui:refreshView(window)
 			end
 			self.overlayRectangle = nil
@@ -1949,6 +1971,7 @@ function App:update(message, window)
 			local start = self.overlayCircle.start
 			if start.x ~= x or start.y ~= y then
 				self.resources.compute:drawEllipse(start.x, start.y, x, y, 2, self.currentColor)
+				self.sounds:play("twang")
 				self.plugins.ui:refreshView(window)
 			end
 			self.overlayCircle = nil
@@ -2015,6 +2038,7 @@ function App:update(message, window)
 	elseif message.type == "CompleteCurve" then
 		if self.overlayCurve and #self.overlayCurve.points >= 2 then
 			self.resources.compute:drawCatmullRom(self.overlayCurve.points, 2, self.currentColor)
+			self.sounds:play("twang")
 			self.plugins.ui:refreshView(window)
 		end
 		self.overlayCurve = nil
@@ -2022,6 +2046,7 @@ function App:update(message, window)
 		window.shouldRedraw = true
 	elseif message.type == "ColorClicked" then
 		self.currentColor = { r = message.r, g = message.g, b = message.b, a = 1.0 }
+		self.sounds:play("pop")
 		self.plugins.ui:refreshView(window)
 	elseif message.type == "ToolClicked" then
 		if self.overlayCurve then
@@ -2032,6 +2057,7 @@ function App:update(message, window)
 			self.overlayText = nil
 		end
 		self.currentAction = { tool = message.tool }
+		self.sounds:play("pop")
 		self.plugins.ui:refreshView(window)
 	elseif message.type == "ClearClicked" then
 		-- TODO: this is awful since we dont free the old resources
@@ -2039,12 +2065,14 @@ function App:update(message, window)
 		local canvas = textureManager:allocate(self.resources.canvasWidth, self.resources.canvasHeight)
 		self.resources.textures.canvas = canvas
 		self.resources.compute = Compute.new(textureManager, canvas, self.plugins.render.device)
+		self.sounds:play("twang")
 		self.plugins.ui:refreshView(window)
 	elseif message.type == "OpenClicked" then
 		-- Load directory listing when opening the file picker
 		self.filePickerDir = "."
 		self.filePickerEntries = self:listDir(self.filePickerDir)
 		self.filePickerScroll = 0
+		self.sounds:play("pop")
 		return { type = "createWindow", width = 500, height = 350, kind = "Open File" }
 	elseif message.type == "OpenPopupClosed" then
 		self.filePickerPath = ""
@@ -2121,6 +2149,7 @@ function App:update(message, window)
 						self.plugins.ui:refreshView(self.plugins.window.mainCtx.window)
 
 						print("Opened file: " .. resolved .. " (" .. w .. "x" .. h .. ")")
+						self.sounds:play("twang")
 					end
 				else
 					print("Failed to open file: " .. (err or "unknown error"))
@@ -2165,6 +2194,7 @@ function App:update(message, window)
 					file:write(encoded)
 					file:close()
 					print("Saved file: " .. resolved .. " (" .. cw .. "x" .. ch .. ")")
+					self.sounds:play("twang")
 				else
 					print("Failed to save file: " .. (err or "unknown error"))
 				end
@@ -2176,6 +2206,7 @@ function App:update(message, window)
 		self.savePickerDir = "."
 		self.savePickerEntries = self:listDir(self.savePickerDir)
 		self.savePickerScroll = 0
+		self.sounds:play("pop")
 		return { type = "createWindow", width = 500, height = 350, kind = "Save File" }
 	elseif message.type == "SavePopupClosed" then
 		self.saveFilePath = ""
@@ -2235,17 +2266,27 @@ function App:update(message, window)
 		self.plugins.ui:refreshView(window)
 	elseif message.type == "RibbonToggled" then
 		self.ribbonOpen = not self.ribbonOpen
+		self.sounds:play("pop")
 		self.plugins.ui:refreshView(window)
 	elseif message.type == "BrushesToggled" then
 		self.brushesOpen = not self.brushesOpen
+		self.sounds:play("pop")
 		self.plugins.ui:refreshView(window)
 	elseif message.type == "BrushSizeSelected" then
 		self.brushSize = message.size
 		self.brushesOpen = false
+		self.sounds:play("pop")
+		self.plugins.ui:refreshView(window)
+	elseif message.type == "SoundToggled" then
+		-- Unmuting plays the click that was just turned back on; muting has
+		-- already cut everything by the time the view is rebuilt.
+		self.sounds:toggleMuted()
+		self.sounds:play("pop")
 		self.plugins.ui:refreshView(window)
 	elseif message.type == "CanvasSizeClicked" then
 		self.canvasWidthInput = tostring(self.resources.canvasWidth)
 		self.canvasHeightInput = tostring(self.resources.canvasHeight)
+		self.sounds:play("pop")
 		return { type = "createWindow", width = 340, height = 180, kind = "Canvas Size" }
 	elseif message.type == "CanvasSizePopupClosed" then
 		self.canvasWidthInput = ""
@@ -2271,6 +2312,7 @@ function App:update(message, window)
 			self.resources.compute = Compute.new(textureManager, canvas, self.plugins.render.device)
 			self.plugins.overlay:resize(self.plugins.window.mainCtx.window, w, h)
 			self.plugins.ui:refreshView(self.plugins.window.mainCtx.window)
+			self.sounds:play("twang")
 		end
 		self.canvasWidthInput = ""
 		self.canvasHeightInput = ""

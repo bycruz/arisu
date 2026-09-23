@@ -28,6 +28,10 @@
 			"commit": "72c972d5818a2b496666e00103f4d1b582c728fa",
 			"git": "https://github.com/lde-org/path"
 		},
+		"treble": {
+			"commit": "e87b584f9acd1ad218f044288f398eb97f8d9b38",
+			"git": "https://github.com/bycruz/treble.git"
+		},
 		"vkapi": {
 			"commit": "0b126912fa5ca091c940e575ecde295a3bb78429",
 			"git": "https://github.com/bycruz/vkapi.git"
@@ -47,6 +51,6 @@
 			"optional": true
 		}
 	},
-	"manifestHash": "049d2e6f4e275c8e",
+	"manifestHash": "54a95f2a23b6e346",
 	"version": "1"
 }
